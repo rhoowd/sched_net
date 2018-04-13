@@ -1,31 +1,9 @@
 import numpy as np
+import config
 
-# Used to map colors to integers
-COLOR_TO_IDX = {
-    'red'   : 0,
-    'green' : 1,
-    'blue'  : 2,
-    'purple': 3,
-    'yellow': 4,
-    'grey'  : 5
-}
 
-IDX_TO_COLOR = dict(zip(COLOR_TO_IDX.values(), COLOR_TO_IDX.keys()))
-
-# Map of object type to integers
-OBJECT_TO_IDX = {
-    'empty'         : 0,
-    'wall'          : 1,
-    'door'          : 2,
-    'locked_door'   : 3,
-    'key'           : 4,
-    'ball'          : 5,
-    'box'           : 6,
-    'goal'          : 7,
-    'agent'         : 8
-}
-
-IDX_TO_OBJECT = dict(zip(OBJECT_TO_IDX.values(), OBJECT_TO_IDX.keys()))
+COLOR_TO_IDX = config.COLOR_TO_IDX
+OBJECT_TO_IDX = config.OBJECT_TO_IDX
 
 N = 0
 E = 1
@@ -46,7 +24,7 @@ class Entity(object):
     def __init__(self, itype, color):
         assert itype in OBJECT_TO_IDX, itype
         assert color in COLOR_TO_IDX, color
-        self.type = itype
+        self.itype = itype
         self.color = color
         self.contains = None
 
@@ -67,23 +45,18 @@ class Entity(object):
         self._x = x
         self._y = y
 
-    def _set_color(self, r):
-        c = COLORS[self.color]
-        r.setLineColor(c[0], c[1], c[2])
-        r.setColor(c[0], c[1], c[2])
-
 # properties of agent entities
 class CoreAgent(Entity):
     def __init__(self, itype='agent', color='green'):
         super(CoreAgent, self).__init__(itype, color)
-        # # agents are movable by default
+        self.name = ""
+        # agents are movable by default
         self.movable = True
         # cannot send communication signals
-        self.silent = False
+        self.silent = True
         # action
         self.action = Action()
-        # # script behavior to execute
-        # self.action_callback = None
+        
         self._obs = None
         self._x = 0
         self._y = 0
@@ -95,31 +68,18 @@ class CoreAgent(Entity):
     def get_obs(self):
         return self._obs
 
-
 class Wall(Entity):
     def __init__(self, color='grey'):
         super(Wall, self).__init__('wall', color)
 
-    def see_behind(self):
-        return False
-
-    def render(self, r):
-        self._set_color(r)
-        r.drawPolygon([
-            (0          , CELL_PIXELS),
-            (CELL_PIXELS, CELL_PIXELS),
-            (CELL_PIXELS,           0),
-            (0          ,           0)
-        ])
-
-class Grid:
+class Grid(object):
     """
     Represent a grid and operations on it
     """
 
     def __init__(self, width, height):
-        assert width >= 3
-        assert height >= 3
+        assert width >= 2
+        assert height >= 2
 
         self.width = width
         self.height = height
@@ -178,7 +138,6 @@ class Grid:
 
         return grid
 
-
     def encode(self):
         """
         Produce a compact numpy encoding of the grid
@@ -194,38 +153,30 @@ class Grid:
                 if v == None:
                     continue
 
-                array[j, i, 0] = OBJECT_TO_IDX[v.type]
+                array[j, i, 0] = OBJECT_TO_IDX[v.itype]
                 array[j, i, 1] = COLOR_TO_IDX[v.color]
 
         return array
 
 # multi-agent world
 class World(object):
-    def __init__(self):
+    def __init__(self, width, height):
         # list of agents and entities (can change at execution-time!)
         self.agents = []
-        self.landmarks = []
+
         # communication channel dimensionality
         self.dim_c = 0
         # position dimensionality
         self.dim_p = 2
 
-        self.width = 4
-        self.height = 5
+        self.width = width
+        self.height = height
 
         self.grid = Grid(self.width, self.height)
         self.grid.wallRect(0, 0, self.width, self.height)
 
-    def get_world_dims(self):
-        """
-        return width and height of the entire environment
-        """
-        return self.width, self.height
-
-
     def empty_grid(self):
         self.grid.reset()
-        self.grid.wallRect(0, 0, self.width, self.height)
 
     def placeObj(self, obj, top=None, size=None, reject_fn=None):
         """
@@ -252,10 +203,6 @@ class World(object):
             if self.grid.get(*pos) != None:
                 continue
 
-            # Don't place the object where the agent is
-            # if pos == self.start_pos:
-                # continue
-
             # Check if there is a filtering criterion
             if reject_fn and reject_fn(self, pos):
                 continue
@@ -266,8 +213,6 @@ class World(object):
         obj.set_pos(pos[0], pos[1])
         return pos
 
-    
-
     def single_agent_step(self, agent, action):
         x, y = agent.pos
 
@@ -275,11 +220,7 @@ class World(object):
             (action == E and not self.grid.get(x-1, y) is None) or \
             (action == W and not self.grid.get(x+1, y) is None) or \
             (action == S and not self.grid.get(x, y+1) is None):
-            print self.grid.get(x, y-1), x, y-1
-            print self.grid.get(x-1, y), x-1, y
-            print self.grid.get(x+1, y), x+1, y
-            print self.grid.get(x, y+1), x, y+1
-            print 'here', action, x, y
+            # collide
             return
         
         else:
@@ -299,21 +240,20 @@ class World(object):
 
     # update state of the world
     def step(self, action_n):
-
         # do the action
         for i, agent in enumerate(self.agents):
             self.single_agent_step(agent, action_n[i])
             agent.action.u = action_n[i]
 
+        # update observations of all agents
         self.set_observations()
 
     def set_observations(self):
         for agent in self.agents:
             x, y = agent.pos
-            obs_range = agent.obs_range
-            obs = self.grid.slice(x-obs_range, y-obs_range,obs_range*2+1,obs_range*2+1)
+            r = agent.obs_range
+            obs = self.grid.slice(x-r, y-r,r*2+1,r*2+1)
             agent.update_obs(obs.encode())
 
-        print self.grid.encode()[:,:,0]
-        print self.agents[0].pos
-        print self.agents[1].pos
+    def get_full_encoding(self):
+        return self.grid.encode()

@@ -56,7 +56,11 @@ class CoreAgent(Entity):
         self.silent = True
         # action
         self.action = Action()
-        
+        # if done doing its action in the current step
+        self.done_moving = False
+        # if the intended step collided 
+        self.collided = False
+
         self._obs = None
         self._x = 0
         self._y = 0
@@ -91,9 +95,11 @@ class Grid(object):
         self.grid[j * self.width + i] = v
 
     def get(self, i, j):
-        assert i >= 0 and i < self.width
-        assert j >= 0 and j < self.height
-        return self.grid[j * self.width + i]
+        if ((i >= 0 and i < self.width) or \
+            (j >= 0 and j < self.height)):
+            return self.grid[j * self.width + i]
+
+        return Wall()
 
     def reset(self):
         self.grid = [None] * self.width * self.height
@@ -143,7 +149,7 @@ class Grid(object):
         Produce a compact numpy encoding of the grid
         """
 
-        array = np.zeros(shape=(self.height, self.width, 2), dtype='uint8')
+        array = np.zeros(shape=(self.height, self.width, 3), dtype='uint8')
 
         for j in range(0, self.height):
             for i in range(0, self.width):
@@ -214,19 +220,13 @@ class World(object):
         return pos
 
     def single_agent_step(self, agent, action):
-        x, y = agent.pos
-
-        if  (action == N and not self.grid.get(x, y-1) is None) or \
-            (action == E and not self.grid.get(x-1, y) is None) or \
-            (action == W and not self.grid.get(x+1, y) is None) or \
-            (action == S and not self.grid.get(x, y+1) is None):
-            # collide
+        if agent.done_moving:
             return
-        
-        else:
-            self.grid.set(x, y, None)
-        
-        if action == N:
+
+        x, y = agent.pos
+        action = agent.action.u
+
+        if   action == N:
             y -= 1
         elif action == E:
             x -= 1
@@ -234,16 +234,38 @@ class World(object):
             x += 1
         elif action == S:
             y += 1
+        elif action == O:
+            agent.done_moving = True
+            return
 
-        self.grid.set(x, y, agent)
-        agent.set_pos(x, y)
+        intended_cell = self.grid.get(x, y)
+        if isinstance(intended_cell, CoreAgent):
+            # let the other agent move first
+            self.single_agent_step(intended_cell, intended_cell.action.u)
+            # get the intended cell (to check if it is empty)
+            intended_cell = self.grid.get(x, y)
+
+        # check if the intended cell is empty
+        if not intended_cell is None:  
+            agent.collided = True
+        else:
+            x_0, y_0 = agent.pos
+            self.grid.set(x_0, y_0, None)
+            self.grid.set(x, y, agent)
+            agent.set_pos(x, y)
+
+        agent.done_moving = True
 
     # update state of the world
     def step(self, action_n):
-        # do the action
+        # set the action
         for i, agent in enumerate(self.agents):
-            self.single_agent_step(agent, action_n[i])
             agent.action.u = action_n[i]
+            agent.done_moving = False
+            
+        # do the action
+        for agent in self.agents:
+            self.single_agent_step(agent, agent.action.u)
 
         # update observations of all agents
         self.set_observations()

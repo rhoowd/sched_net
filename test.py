@@ -3,8 +3,8 @@ import os,sys
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 import argparse
 
-from multiagent.environment import MultiAgentEnv
-import multiagent.scenarios as scenarios
+from envs.environment import MultiAgentEnv
+import envs.scenarios as scenarios
 
 if __name__ == '__main__':
     # parse arguments

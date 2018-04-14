@@ -1,10 +1,14 @@
 import numpy as np
-from multiagent.grid_core import World
-from multiagent.grid_core import CoreAgent as Agent
-from multiagent.scenario import BaseScenario
+from envs.grid_core import World
+from envs.grid_core import CoreAgent as Agent
+from envs.scenario import BaseScenario
+import config
 
-n_predator = 2
-n_prey = 1
+FLAGS = config.flags.FLAGS
+
+n_predator = FLAGS.n_predator
+n_prey = FLAGS.n_prey
+map_size = FLAGS.map_size
 
 class Prey(Agent):
     def __init__(self):
@@ -23,7 +27,7 @@ class Scenario(BaseScenario):
         self.prey_captured = False
 
     def make_world(self):
-        world = World(width=5, height=5)
+        world = World(width=map_size, height=map_size)
 
         agents = []
         self.atype_to_idx = {
@@ -42,7 +46,6 @@ class Scenario(BaseScenario):
             self.atype_to_idx["prey"].append(n_predator + i)
 
         world.agents = agents
-
         for i, agent in enumerate(world.agents):
             agent.name = 'agent %d' % i
             agent.silent = True 

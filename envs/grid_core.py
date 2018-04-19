@@ -151,15 +151,18 @@ class Grid(object):
         Produce a compact numpy encoding of the grid
         """
 
-        array = np.zeros(shape=(self.height, self.width, 3), dtype='uint8')
+        array = np.zeros(shape=(self.height, self.width, 3), dtype=np.int8)
 
         for j in range(0, self.height):
             for i in range(0, self.width):
 
                 v = self.get(i, j)
+                if isinstance(v, CoreAgent):
+                    array[j, i, 2] = v.id
 
                 if v == None:
                     continue
+
 
                 array[j, i, 0] = OBJECT_TO_IDX[v.itype]
                 array[j, i, 1] = COLOR_TO_IDX[v.color]

@@ -11,7 +11,7 @@ def config_env(_flags):
 
     # Observation
     # flags.DEFINE_integer("history_len", 1, "How many previous steps we look back")
-    flags.DEFINE_integer("history_len", 3, "How many previous steps we look back")
+    flags.DEFINE_integer("history_len", 1, "How many previous steps we look back")
 
     # core
     flags.DEFINE_integer("map_size", 3, "Size of the map")

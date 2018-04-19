@@ -10,7 +10,7 @@ FLAGS = config.flags.FLAGS
 
 if __name__ == '__main__':
 
-    start_time = time.time()
+
 
     # === Logging setup === #
     logger_env = logging.getLogger('GridMARL')
@@ -28,10 +28,11 @@ if __name__ == '__main__':
     print FLAGS.agent, config.file_name
 
     # start learning
-    if FLAGS.train == True:
+    if FLAGS.train:
+        start_time = time.time()
         trainer.learn()
+        finish_time = time.time()
+        trainer.test()
+        print "TRAINING TIME (sec)", finish_time - start_time
     else:
         trainer.test()
-
-    print "TRAINING TIME (sec)", time.time() - start_time
-    print "exit"

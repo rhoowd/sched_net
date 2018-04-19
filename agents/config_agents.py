@@ -6,10 +6,10 @@
 def config_agent(_flags):
     flags = _flags
 
-    flags.DEFINE_string("agent", "ind_ac", "Agent")
+    flags.DEFINE_string("agent", "qlearn_c", "Agent")
 
-    flags.DEFINE_integer("training_step", 500, "Training time step")
-    flags.DEFINE_integer("testing_step", 1, "Testing time step")
+    flags.DEFINE_integer("training_step", 1000, "Training time step")
+    flags.DEFINE_integer("testing_step", 100, "Testing time step")
     flags.DEFINE_integer("max_step", 200, "Maximum time step per episode")
     flags.DEFINE_integer("pre_train_steps", 8, "Number of steps before training")
     
@@ -22,6 +22,9 @@ def config_agent(_flags):
     
     flags.DEFINE_boolean("train", True, "Training or testing")
     flags.DEFINE_boolean("guide", False, "Use guided samples")
+
+    flags.DEFINE_float("lr", 0.001, "Learning rate")
+    flags.DEFINE_float("df", 0.999, "Discount factor")
 
 def get_filename():
     import config

@@ -29,7 +29,7 @@ if __name__ == '__main__':
 
     obs_n = env.reset()[:2]
     print env.get_agent_profile()
-    print env.get_full_encoding()[:,:,2]
+    print env.get_full_encoding()[:, :, 2]
     imap = np.array(obs_n).reshape((2, FLAGS.history_len,3,3,1))
 
     minimap = imap[:,:,:,:,0]

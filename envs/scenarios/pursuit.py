@@ -97,15 +97,15 @@ class Scenario(BaseScenario):
                 for i in self.atype_to_idx["prey"]:
                     prey = world.agents[i]
                     if prey.cannot_move():
-                        print "captured"
+                        # print "captured"
                         self.prey_captured = True
                         reward = 1
                         # return max(10 - world.step_cnt, 0)
                 # reward = -1
                 # if agent.can_observe_prey():
                 #     reward = 0.0001
-                if agent.collided:
-                    reward += -0.01
+                # if agent.collided:
+                #     reward += -0.01
                 return reward
         else: # if prey
             if agent.cannot_move():

@@ -27,10 +27,10 @@ if __name__ == '__main__':
     print "action space:", env.action_space[0].n
     print "observation space:", env.observation_space
 
-    obs_n = env.reset()
+    obs_n = env.reset()[:2]
     print env.get_agent_profile()
     print env.get_full_encoding()[:,:,0]
-    imap = np.array(obs_n).reshape((3, FLAGS.history_len,3,3,3))
+    imap = np.array(obs_n).reshape((2, FLAGS.history_len,3,3,1))
 
     minimap = imap[:,:,:,:,0]
     print minimap[0, -1]
@@ -41,10 +41,11 @@ if __name__ == '__main__':
         a1 = input("action of agent 1:")
         act_n = [a0, a1, 2]
         obs_n, reward_n, done_n, info_n = env.step(act_n)
+        obs_n = obs_n[:2]
         
 
         print env.get_full_encoding()[:,:,0]
-        imap = np.array(obs_n).reshape((3, FLAGS.history_len,3,3,3))
+        imap = np.array(obs_n).reshape((2, FLAGS.history_len,3,3,1))
 
         minimap = imap[:,:,:,:,0]
         print minimap[0, -1]

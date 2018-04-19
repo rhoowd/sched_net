@@ -183,7 +183,10 @@ class World(object):
         self.grid = Grid(self.width, self.height)
         self.grid.wallRect(0, 0, self.width, self.height)
 
+        self.step_cnt = 0
+
     def empty_grid(self):
+        self.step_cnt = 0
         self.grid.reset()
 
     def placeObj(self, obj, top=None, size=None, reject_fn=None):
@@ -238,6 +241,7 @@ class World(object):
             y += 1
         elif action == O:
             agent.done_moving = True
+            agent.collided = False
             return
 
         intended_cell = self.grid.get(x, y)
@@ -257,11 +261,13 @@ class World(object):
             self.grid.set(x_0, y_0, None)
             self.grid.set(x, y, agent)
             agent.set_pos(x, y)
+            agent.collided = False
 
         agent.done_moving = True
 
     # update state of the world
     def step(self, action_n):
+        self.step_cnt += 1
         # set the action
         for i, agent in enumerate(self.agents):
             agent.action.u = action_n[i]

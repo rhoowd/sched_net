@@ -109,6 +109,8 @@ class CriticNetwork:
 
         # placeholders
         self.state_ph = tf.placeholder(dtype=tf.float32, shape=[None, state_dim])
+        self.action_ph = tf.placeholder(dtype=tf.int32, shape=[None])
+        self.a_onehot = tf.one_hot(self.action_ph, action_dim, 1.0, 0.0)
         self.reward_ph = tf.placeholder(dtype=tf.float32, shape=[None])
         self.next_state_ph = tf.placeholder(dtype=tf.float32, shape=[None, state_dim])
         self.is_not_terminal_ph = tf.placeholder(dtype=tf.float32, shape=[None])  # indicators (go into target computation)
@@ -116,12 +118,12 @@ class CriticNetwork:
 
         with tf.variable_scope(scope):
             # Critic applied to state_ph
-            self.q_values = self.generate_critic_network(self.state_ph, trainable=True)
+            self.q_values = self.generate_critic_network(self.state_ph, self.a_onehot, trainable=True)
 
         # slow target critic network
         with tf.variable_scope('slow_target_'+scope):
             self.slow_q_values = tf.stop_gradient(
-                self.generate_critic_network(self.next_state_ph, trainable=False))
+                self.generate_critic_network(self.next_state_ph, self.a_onehot, trainable=False))
 
         # One step TD targets y_i for (s,a) from experience replay
         # = r_i + gamma*Q_slow(s',mu_slow(s')) if s' is not terminal
@@ -146,8 +148,9 @@ class CriticNetwork:
         self.update_slow_targets_op_c = tf.group(*update_slow_target_ops_c)
 
     # will use this to initialize both the critic network its slowly-changing target network with same structure
-    def generate_critic_network(self, s, trainable):
-        hidden = tf.layers.dense(s, h1_critic, activation=tf.nn.relu,
+    def generate_critic_network(self, s, a, trainable):
+        state_action = tf.concat([s, a], axis=1)
+        hidden = tf.layers.dense(state_action, h1_critic, activation=tf.nn.relu,
                                  kernel_initializer=tf.random_normal_initializer(0., .1),    # weights
                                  bias_initializer=tf.constant_initializer(0.1),  # biases
                                  use_bias=True, trainable=trainable, name='dense_c1')
@@ -163,10 +166,11 @@ class CriticNetwork:
                                    name='dense_c3',use_bias=False)
         return q_values
 
-    def training_critic(self, state_ph, reward_ph, next_state_ph, is_not_terminal_ph):
+    def training_critic(self, state_ph, action_ph, reward_ph, next_state_ph, is_not_terminal_ph):
 
         return self.sess.run([self.td_errors, self.critic_train_op],
                              feed_dict={self.state_ph: state_ph,
+                                        self.action_ph: action_ph,
                                         self.reward_ph: reward_ph,
                                         self.next_state_ph: next_state_ph,
                                         self.is_not_terminal_ph: is_not_terminal_ph,

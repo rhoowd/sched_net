@@ -1,6 +1,6 @@
 from agents.replay_buffer import ReplayBuffer
 from agents.ind_ac.agent import Agent
-from agents.simple_agent import RandomAgent
+from agents.simple_agent import StaticAgent as NonLearningAgent
 import tensorflow as tf
 import numpy as np
 import config
@@ -35,7 +35,8 @@ class Trainer():
                               self._agent_profile["predator"]["obs_dim"][0],
                               self.sess, name="predator_" + str(i))
             else:
-                agent = RandomAgent(self._agent_profile[atype]["act_dim"])
+                agent = NonLearningAgent(2)
+                # agent = NonLearningAgent(self._agent_profile[atype]["act_dim"])
 
             self._agents.append(agent)
 
@@ -67,16 +68,16 @@ class Trainer():
         """
         act_n = []
         for i, agent in enumerate(self._agents):
+            if isinstance(agent, NonLearningAgent):
+                act_n.append(agent.act(None)) # let it do its own random action
+                continue
+
             if (train and (step < pre_train_steps or np.random.rand() < self.epsilon)):
-                if isinstance(agent, RandomAgent):
-                    act_n.append(agent.act(None)) # let it do its own random action
-                    continue
 
                 # guided action (no collision)
-                shape = int(np.sqrt(obs_n[i].shape[0]/(FLAGS.history_len*3)))
-                imap = obs_n[i].reshape((FLAGS.history_len,shape,shape,3))
-                minimap = imap[:,:,:,0] - imap[:,:,:,2]
-                minimap = minimap[-1]
+                shape = int(np.sqrt(obs_n[i].shape[0]/(FLAGS.history_len)))
+                imap = obs_n[i].reshape((FLAGS.history_len,shape,shape))
+                minimap = imap[-1,:,:]
 
                 valid_act = [2]
                 center = shape//2
@@ -90,19 +91,21 @@ class Trainer():
                     valid_act.append(4)
                 action = np.random.choice(valid_act)
                 act_n.append(action)
+                continue
             
+            qval = agent.act(obs_n[i])
+            
+            if np.isnan(qval).any():
+                print "Value Error: nan"
+                print qval
+                sys.exit()
+
+            if train:
+                act_n.append(np.random.choice(len(qval[0]),p=qval[0]))
             else:
-                qval = agent.act(obs_n[i])
-                
-                if np.isnan(qval).any():
-                    print "Value Error: nan"
-                    print qval
-                    sys.exit()
-
-                act_n.append(np.argmax(qval))
-
-                if not train:
-                    print qval
+                act_n.append(np.random.choice(len(qval[0]),p=qval[0]))
+                # act_n.append(np.argmax(qval))
+                print qval
 
         return np.array(act_n, dtype=np.int32)
 
@@ -127,8 +130,11 @@ class Trainer():
 
             print "===== episode %d =====" %(episode)
 
-            for ep_step in xrange(1, max_step+1):
+            # for ep_step in xrange(1, max_step+1):
+            ep_step = 0
+            while True:
                 step += 1 # increment global step
+                ep_step += 1
                 act_n = self.get_actions(obs_n, step)
 
                 obs_n_next, reward_n, done_n, info_n  = self._env.step(act_n)
@@ -174,6 +180,8 @@ class Trainer():
 
     def test(self):
         render = True
+        capture_count = 0
+        ep_length = []
         for episode in range(5):
             obs_n = self._env.reset()
 
@@ -183,13 +191,15 @@ class Trainer():
 
             total_reward = np.zeros(FLAGS.n_predator)
             for ep_step in xrange(1, testing_step+1):
+                full_map = self._env.get_full_encoding()[:,:,0]
                 act_n = self.get_actions(obs_n, 0, train=False)
                 obs_n_next, reward_n, done_n, info_n = self._env.step(act_n)
 
-                shape = int(np.sqrt(obs_n[0].shape[0]/(FLAGS.history_len*3)))
-                imap = np.array(obs_n).reshape((len(self._agents), FLAGS.history_len,shape,shape,3))
+                pred_obs = [obs_n[i] for i in self._agent_profile["predator"]["idx"]]
+                shape = int(np.sqrt(pred_obs[0].shape[0]/(FLAGS.history_len)))
+                minimap = np.array(pred_obs).reshape((self._n_predator, FLAGS.history_len,shape,shape))
 
-                minimap = imap[:,:,:,:,0]
+                print full_map
                 print minimap[0, -1], act_n[0], reward_n[0]
                 print minimap[1, -1], act_n[1], reward_n[1]
 
@@ -200,4 +210,17 @@ class Trainer():
                     print ep_step, reward_n, total_reward
 
                 if sum(done_n)>0:
+                    capture_count += 1
                     break
+                    
+            ep_length.append(ep_step)
+            pred_obs = [obs_n[i] for i in self._agent_profile["predator"]["idx"]]
+            shape = int(np.sqrt(pred_obs[0].shape[0]/(FLAGS.history_len)))
+            minimap = np.array(pred_obs).reshape((self._n_predator, FLAGS.history_len,shape,shape))
+
+            print self._env.get_full_encoding()[:,:,0]
+            print minimap[0, -1], act_n[0], reward_n[0]
+            print minimap[1, -1], act_n[1], reward_n[1]
+
+        print "CAPTURE COUNT: ", capture_count
+        print "EPISODE LENGTHS: ", ep_length

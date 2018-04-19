@@ -8,7 +8,7 @@ def config_agent(_flags):
 
     flags.DEFINE_string("agent", "ind_ac", "Agent")
 
-    flags.DEFINE_integer("training_step", 50000, "Training time step")
+    flags.DEFINE_integer("training_step", 500, "Training time step")
     flags.DEFINE_integer("testing_step", 50, "Testing time step")
     flags.DEFINE_integer("max_step", 200, "Maximum time step per episode")
     flags.DEFINE_integer("pre_train_steps", 8, "Number of steps before training")
@@ -17,10 +17,10 @@ def config_agent(_flags):
     flags.DEFINE_integer("minibatch_size", 8, "Minibatch size")
     flags.DEFINE_integer("rnn_trace_len", 4, "Length of samples for training RNN")
     
-    flags.DEFINE_boolean("load_nn", True, "Load nn from file or not")
+    flags.DEFINE_boolean("load_nn", False, "Load nn from file or not")
     flags.DEFINE_string("nn_file", "results/nn/s", "The name of file for loading")
     
-    flags.DEFINE_boolean("train", False, "Training or testing")
+    flags.DEFINE_boolean("train", True, "Training or testing")
     flags.DEFINE_boolean("guide", False, "Use guided samples")
 
 def get_filename():

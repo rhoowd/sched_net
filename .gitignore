@@ -1,2 +1,4 @@
 *.pyc
 results/eval/*
+.idea
+*.log

@@ -22,7 +22,7 @@ if __name__ == '__main__':
     logger_env.info('GridMARL Start with %d predator(s) and %d prey(s)', FLAGS.n_predator, FLAGS.n_prey)
 
     # Load trainer
-    logger_agent.info("Agent")
+    logger_agent.info('Agent: {}'.format(FLAGS.agent))
     trainer = agents.load(FLAGS.agent+"/trainer.py").Trainer(env)
 
     print FLAGS.agent, config.file_name

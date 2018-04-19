@@ -32,7 +32,9 @@ class MultiAgentEnv(gym.Env):
         # configure spaces
         self.action_space = []
         self.observation_space = []
+        self.agent_precedence = []
         for agent in self.agents:
+            self.agent_precedence.append(agent.itype)
             total_action_space = []
             u_action_space = spaces.Discrete(world.dim_p * 2 + 1)
             total_action_space.append(u_action_space)
@@ -50,7 +52,7 @@ class MultiAgentEnv(gym.Env):
             if len(total_action_space) > 1:
                 # all action spaces are discrete, so simplify to MultiDiscrete action space
                 if all([isinstance(act_space, spaces.Discrete) for act_space in total_action_space]):
-                    act_space = spaces.MultiDiscrete([[0,act_space.n-1] for act_space in total_action_space])
+                    act_space = spaces.MultiDiscrete([act_space.n for act_space in total_action_space])
                 else: 
                     act_space = spaces.Tuple(total_action_space)
                 self.action_space.append(act_space)
@@ -62,6 +64,31 @@ class MultiAgentEnv(gym.Env):
             self.observation_space.append(spaces.Box(low=-np.inf, high=+np.inf, shape=(obs_dim,), dtype=np.float32))
             agent.action.c = np.zeros(self.world.dim_c)
 
+
+    def get_agent_profile(self):
+        agent_profile = {}
+
+        for i, agent in enumerate(self.agents):
+            if agent.itype in agent_profile:
+                agent_profile[agent.itype]['n_agent'] += 1
+                agent_profile[agent.itype]['idx'].append(i)
+            else:
+                if isinstance(self.action_space[i], spaces.Discrete):
+                    act_space = self.action_space[i].n
+                    com_space = 0
+                else:
+                    act_space = self.action_space[i].nvec[0]
+                    com_space = self.action_space[i].nvec[1]
+
+                agent_profile[agent.itype] = {
+                    'n_agent': 1,
+                    'idx': [i],
+                    'act_dim': act_space,
+                    'com_dim': com_space,
+                    'obs_dim': self.observation_space[i].shape
+                }
+
+        return agent_profile
 
     def step(self, action_n):
         obs_n = []
@@ -85,7 +112,6 @@ class MultiAgentEnv(gym.Env):
         self.reset_callback(self.world)
 
         obs_n = []
-        self.agents = self.world.agents
         for agent in self.agents:
             obs_n.append(self._get_obs(agent))
         return obs_n

@@ -82,7 +82,7 @@ class Scenario(BaseScenario):
         return 0
 
     def observation(self, agent, world):
-        obs = agent.get_obs()
+        obs = agent.get_obs().flatten()
         return obs
 
     def done(self, agent, world):

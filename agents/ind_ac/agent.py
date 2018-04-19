@@ -6,8 +6,7 @@ import config
 FLAGS = config.flags.FLAGS
 
 class Agent(object):
-    def __init__(self, env, action_dim, obs_dim, sess, name=""):
-        self._env = env
+    def __init__(self, action_dim, obs_dim, sess, name=""):
         self._action_dim = action_dim
         self._obs_dim = obs_dim
         self._name = name 

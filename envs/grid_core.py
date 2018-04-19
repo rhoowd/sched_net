@@ -56,6 +56,8 @@ class CoreAgent(Entity):
         self.silent = True
         # action
         self.action = Action()
+        # if waiting for other agents action
+        self.waiting = False
         # if done doing its action in the current step
         self.done_moving = False
         # if the intended step collided 
@@ -95,7 +97,7 @@ class Grid(object):
         self.grid[j * self.width + i] = v
 
     def get(self, i, j):
-        if ((i >= 0 and i < self.width) or \
+        if ((i >= 0 and i < self.width) and \
             (j >= 0 and j < self.height)):
             return self.grid[j * self.width + i]
 
@@ -220,7 +222,7 @@ class World(object):
         return pos
 
     def single_agent_step(self, agent, action):
-        if agent.done_moving:
+        if agent.done_moving or agent.waiting:
             return
 
         x, y = agent.pos
@@ -240,8 +242,10 @@ class World(object):
 
         intended_cell = self.grid.get(x, y)
         if isinstance(intended_cell, CoreAgent):
+            agent.waiting = True
             # let the other agent move first
             self.single_agent_step(intended_cell, intended_cell.action.u)
+            agent.waiting = False
             # get the intended cell (to check if it is empty)
             intended_cell = self.grid.get(x, y)
 

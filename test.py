@@ -5,6 +5,11 @@ import argparse
 
 from envs.environment import MultiAgentEnv
 import envs.scenarios as scenarios
+import numpy as np
+import config
+
+FLAGS = config.flags.FLAGS
+
 
 if __name__ == '__main__':
     # parse arguments
@@ -20,12 +25,16 @@ if __name__ == '__main__':
     env = MultiAgentEnv(world, scenario.reset_world, scenario.reward, scenario.observation, done_callback=scenario.done)
     act_n = [2, 2]
     print "action space:", env.action_space[0].n
-    print "observation space:", env.observation_space[0].shape
+    print "observation space:", env.observation_space
 
     obs_n = env.reset()
+    print env.get_agent_profile()
     print env.get_full_encoding()[:,:,0]
-    print obs_n[0][:,:,0]
-    print obs_n[1][:,:,0]
+    imap = np.array(obs_n).reshape((3, FLAGS.history_len,3,3,3))
+
+    minimap = imap[:,:,:,:,0]
+    print minimap[0, -1]
+    print minimap[1, -1]
 
     while True:
         a0 = input("action of agent 0:")
@@ -33,8 +42,14 @@ if __name__ == '__main__':
         act_n = [a0, a1, 2]
         obs_n, reward_n, done_n, info_n = env.step(act_n)
         
+
         print env.get_full_encoding()[:,:,0]
-        print obs_n[0][:,:,0]
-        print obs_n[1][:,:,0]
+        imap = np.array(obs_n).reshape((3, FLAGS.history_len,3,3,3))
+
+        minimap = imap[:,:,:,:,0]
+        print minimap[0, -1]
+        print minimap[1, -1]
+
 
         print reward_n, done_n
+

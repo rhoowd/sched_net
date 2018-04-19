@@ -1,5 +1,6 @@
 from agents.replay_buffer import ReplayBuffer
 from agents.ind_ac.agent import Agent
+from agents.simple_agent import RandomAgent
 import tensorflow as tf
 import numpy as np
 import config
@@ -24,22 +25,27 @@ class Trainer():
         self._n_predator = FLAGS.n_predator
         self._n_prey = FLAGS.n_prey
         self._agent_profile = self._env.get_agent_profile()
+        self._agent_precedence = self._env.agent_precedence
         self.sess = tf.Session()
 
-        # Create Agents (use dictionary because I will extend this to heterogenous agents)
-        self._agents = {}
-        self._agents["predator"] = []
-        for i in range(self._n_predator):
-            agent = Agent(env, self._agent_profile["predator"]["act_dim"],
-                          self._agent_profile["predator"]["obs_dim"],
-                          self.sess, name="predator_" + str(i))
-            self._agents["predator"].append(agent)
+        self._agents = []
+        for i, atype in enumerate(self._agent_precedence):
+            if atype == "predator":
+                agent = Agent(self._agent_profile["predator"]["act_dim"],
+                              self._agent_profile["predator"]["obs_dim"][0],
+                              self.sess, name="predator_" + str(i))
+            else:
+                agent = RandomAgent(self._agent_profile[atype]["act_dim"])
+
+            self._agents.append(agent)
 
         # Create replay buffer (not included in the agents coz we might use central RB)
-        self._replay_buffer = {}
-        self._replay_buffer["predator"] = []
-        for i in range(self._n_predator):
-            self._replay_buffer["predator"].append(ReplayBuffer())
+        self._replay_buffer = []
+        for atype in self._agent_precedence:
+            if atype == "predator":
+                self._replay_buffer.append(ReplayBuffer())
+            else:
+                self._replay_buffer.append(None)
 
         # intialize tf variables
         self.sess.run(tf.global_variables_initializer())
@@ -50,19 +56,23 @@ class Trainer():
 
         self.epsilon = 1.0
 
-    def get_actions(self, obs_n, atype, step, train=True):  
+    def get_actions(self, obs_n, step, train=True):  
         """
         Get the actions from each agent of a centrain type
 
         :param obs_n: the observations
-        :param atype: the type of agent
         :param step: the current step
         :param train: if training
         :return: actions of each [atype] agent
         """
         act_n = []
-        for i in range(self._agent_profile[atype]["n_agent"]):
+        for i, agent in enumerate(self._agents):
             if (train and (step < pre_train_steps or np.random.rand() < self.epsilon)):
+                if isinstance(agent, RandomAgent):
+                    act_n.append(agent.act(None)) # let it do its own random action
+                    continue
+
+                # guided action (no collision)
                 shape = int(np.sqrt(obs_n[i].shape[0]/(FLAGS.history_len*3)))
                 imap = obs_n[i].reshape((FLAGS.history_len,shape,shape,3))
                 minimap = imap[:,:,:,0] - imap[:,:,:,2]
@@ -78,19 +88,11 @@ class Trainer():
                     valid_act.append(3)
                 if minimap[center+1,center] == 0: #down
                     valid_act.append(4)
-                if minimap[center-1,center] == -1: #a_up
-                    valid_act.append(5)
-                if minimap[center,center-1] == -1: #a_left
-                    valid_act.append(6)
-                if minimap[center,center+1] == -1: #a_right
-                    valid_act.append(7)
-                if minimap[center+1,center] == -1: #a_down
-                    valid_act.append(8)
                 action = np.random.choice(valid_act)
-                # action = np.random.randint(self._agent_profile[atype]["act_dim"])
                 act_n.append(action)
+            
             else:
-                qval = self._agents[atype][i].act(obs_n[i])
+                qval = agent.act(obs_n[i])
                 
                 if np.isnan(qval).any():
                     print "Value Error: nan"
@@ -102,19 +104,17 @@ class Trainer():
                 if not train:
                     print qval
 
-
         return np.array(act_n, dtype=np.int32)
 
-    def train_agents_network(self, minibatch, atype, step):
+    def train_agents_network(self, minibatch, step):
         """
         Update parameters of each agent of a certain type
 
         :param minibatch: the data to be trained on
-        :param atype: the type of agent to train
         :param step: the current step
         """
-        for i in range(self._agent_profile[atype]["n_agent"]):
-            self._agents[atype][i].train(minibatch[i], step)
+        for i, agent in enumerate(self._agents):
+            agent.train(minibatch[i], step)
 
     def learn(self):
         step = 0
@@ -122,52 +122,42 @@ class Trainer():
 
         while step < training_step:
             episode += 1
-            self._env.reset()
-            obs_n = self._env.get_obs()
-            obs_n = obs_n["predator"]
-
-            render = (episode % FLAGS.render_every == 0)
+            obs_n = self._env.reset()
             total_reward = np.zeros(FLAGS.n_predator)
 
             print "===== episode %d =====" %(episode)
 
             for ep_step in xrange(1, max_step+1):
                 step += 1 # increment global step
+                act_n = self.get_actions(obs_n, step)
 
-                act_n = {"predator": self.get_actions(obs_n, "predator", step),
-                         "prey": np.array((4), dtype=np.int32)}
-                         # "prey": np.random.randint(self._agent_profile["prey"]["act_dim"], size=(1), dtype=np.int32)}
+                obs_n_next, reward_n, done_n, info_n  = self._env.step(act_n)
 
-                obs_n_next, reward_n, done = self._env.step(act_n, render)
-
-
-                act_n = act_n["predator"]
-                reward_n = reward_n["predator"]
-                obs_n_next = obs_n_next["predator"]
-
-                if (reward_n > 0).all():
-                    reward_n = [200 - ep_step, 200 - ep_step]
-                    done = True
-                elif ep_step == max_step:
-                    done = True
+                # if (reward_n > 0).all():
+                #     reward_n = [200 - ep_step, 200 - ep_step]
+                #     done = True
+                # elif ep_step == max_step:
+                #     done = True
                     # reward_n = [-1, -1]
 
                 # if ep_step == max_step and not done:
                     # reward_n = [-1]
+                total_reward += np.array(reward_n)[self._agent_profile["predator"]["idx"]]
 
-                total_reward += reward_n
-
-                # for atype in self._learning_agents():
-                for i in range(self._n_predator):
-                    exp = (obs_n[i], act_n[i], reward_n[i], obs_n_next[i], 1.0*(not done))
-                    self._replay_buffer["predator"][i].add_to_memory(exp)
+                for i, rb in enumerate(self._replay_buffer):
+                    if not rb is None:
+                        exp = (obs_n[i], act_n[i], reward_n[i], obs_n_next[i], 1.0*(not done_n[i]))
+                        rb.add_to_memory(exp)
                     
                 if step > pre_train_steps:
                     minibatch = []
-                    for i in range(self._n_predator):
-                        minibatch.append(self._replay_buffer["predator"][i].sample_from_memory())
+                    for i in range(len(self._agents)):
+                        if self._replay_buffer[i] is None:
+                            minibatch.append(None)
+                        else:
+                            minibatch.append(self._replay_buffer[i].sample_from_memory())
 
-                    self.train_agents_network(minibatch, "predator", step)
+                    self.train_agents_network(minibatch, step)
 
                 self.epsilon = max(self.epsilon - epsilon_dec, epsilon_min)
                 obs_n = obs_n_next
@@ -175,7 +165,7 @@ class Trainer():
                 if step % 10000 == 0:
                     self.saver.save(self.sess, save_file, step)
 
-                if step == training_step or done:
+                if step == training_step or sum(done_n)>0:
                     break
             
             print step, ep_step, reward_n, total_reward, self.epsilon
@@ -185,11 +175,7 @@ class Trainer():
     def test(self):
         render = True
         for episode in range(5):
-            self._env.reset()
-            obs_n = self._env.get_obs()
-            obs_n = obs_n["predator"]
-
-            total_reward = [0,0] # lipat mo sa envs
+            obs_n = self._env.reset()
 
             print "======================"
             print "===== episode %d =====" %(episode)
@@ -197,23 +183,21 @@ class Trainer():
 
             total_reward = np.zeros(FLAGS.n_predator)
             for ep_step in xrange(1, testing_step+1):
-                act_n = {"predator": self.get_actions(obs_n, "predator", 0, False),
-                         "prey": np.array((4), dtype=np.int32)}
-                         # "prey": np.random.randint(self._agent_profile["prey"]["act_dim"], size=(1), dtype=np.int32)}
-                obs_n_next, reward_n, done = self._env.step(act_n, render)
+                act_n = self.get_actions(obs_n, 0, train=False)
+                obs_n_next, reward_n, done_n, info_n = self._env.step(act_n)
+
                 shape = int(np.sqrt(obs_n[0].shape[0]/(FLAGS.history_len*3)))
-                imap = obs_n.reshape((self._n_predator, FLAGS.history_len,shape,shape,3))
+                imap = np.array(obs_n).reshape((len(self._agents), FLAGS.history_len,shape,shape,3))
 
-                minimap = imap[:,:,:,:,0] - imap[:,:,:,:,2] - imap[:,:,:,:,1]*2
-                print minimap[0, -1], act_n["predator"][0], reward_n["predator"][0]
-                print minimap[1, -1], act_n["predator"][1], reward_n["predator"][1]
+                minimap = imap[:,:,:,:,0]
+                print minimap[0, -1], act_n[0], reward_n[0]
+                print minimap[1, -1], act_n[1], reward_n[1]
 
-                obs_n = obs_n_next["predator"]
-                reward_n = reward_n["predator"]
-                total_reward += reward_n
+                obs_n = obs_n_next
+                total_reward += np.array(reward_n)[self._agent_profile["predator"]["idx"]]
 
                 if ep_step % 15 == 0:
                     print ep_step, reward_n, total_reward
 
-                if done:
+                if sum(done_n)>0:
                     break

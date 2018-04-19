@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding=utf8
 import logging
-import envs.make_env as make_env
+import make_env
 import agents
 import config
 import time

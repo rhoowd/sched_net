@@ -1,0 +1,1 @@
+# The folder for saving structure and weight of Neural Network

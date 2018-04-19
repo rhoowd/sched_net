@@ -15,7 +15,7 @@ class StaticAgent(object):
         self._action = action
 
     def act(self, obs):
-        return self.action
+        return self._action
 
     def train(self, minibatch, step):
         return

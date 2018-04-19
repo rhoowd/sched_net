@@ -8,8 +8,8 @@ def config_agent(_flags):
 
     flags.DEFINE_string("agent", "ind_ac", "Agent")
 
-    flags.DEFINE_integer("training_step", 50000, "Training time step")
-    flags.DEFINE_integer("testing_step", 50, "Testing time step")
+    flags.DEFINE_integer("training_step", 200000, "Training time step")
+    flags.DEFINE_integer("testing_step", 100, "Testing time step")
     flags.DEFINE_integer("max_step", 200, "Maximum time step per episode")
     flags.DEFINE_integer("pre_train_steps", 8, "Number of steps before training")
     

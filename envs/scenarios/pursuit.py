@@ -65,7 +65,7 @@ class Scenario(BaseScenario):
 
         world.agents = agents
         for i, agent in enumerate(world.agents):
-            agent.name = 'agent %d' % i
+            agent.id = i + 1
             agent.silent = True 
 
         # make initial conditions

@@ -18,6 +18,7 @@ class Agent(object):
 
     def train(self, minibatch, step):
         td_error, _ = self._critic.training_critic(np.asarray([elem[0] for elem in minibatch]),
+                                             np.asarray([elem[1] for elem in minibatch]),
                                              np.asarray([elem[2] for elem in minibatch]),
                                              np.asarray([elem[3] for elem in minibatch]),
                                              np.asarray([elem[4] for elem in minibatch]))

@@ -10,7 +10,6 @@ def config_env(_flags):
     flags.DEFINE_integer("n_prey", 1, "Number of preys")
 
     # Observation
-    # flags.DEFINE_integer("history_len", 1, "How many previous steps we look back")
     flags.DEFINE_integer("history_len", 1, "How many previous steps we look back")
 
     # core

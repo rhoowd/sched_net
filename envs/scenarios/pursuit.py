@@ -27,10 +27,14 @@ class Predator(Agent):
     def __init__(self):
         super(Predator, self).__init__("predator", "blue")
         self._obs = deque(maxlen=FLAGS.history_len)
+        self.obs_range = 1
 
     def can_observe_prey(self):
-        prey = config.OBJECT_TO_IDX["prey"] 
-        return (self._obs[:,:,0] == prey).any()
+        shape = np.shape(self._obs)
+        obs_size = shape[1]*shape[2]
+        obs = np.reshape(self._obs, obs_size)
+        ret = np.shape(np.where(obs == 4))[1] > 0
+        return ret
 
     def update_obs(self, obs):
         self._obs.append(obs[:,:,0]) # use only the first channel
@@ -100,12 +104,10 @@ class Scenario(BaseScenario):
                         # print "captured"
                         self.prey_captured = True
                         reward = 1
-                        # return max(10 - world.step_cnt, 0)
-                # reward = -1
+                        return reward
+                # kdw - Use this for large map size
                 # if agent.can_observe_prey():
-                #     reward = 0.0001
-                # if agent.collided:
-                #     reward += -0.01
+                #     reward = 0.0
                 return reward
         else: # if prey
             if agent.cannot_move():

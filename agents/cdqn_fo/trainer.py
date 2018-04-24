@@ -2,19 +2,21 @@
 # coding=utf8
 
 """
-Setting
+===========================================
+ :mod:`qlearn` Q-Learning
+===========================================
+.. moduleauthor:: Daewoo Kim
+.. note:: note...
 
-epsilon start value : 0.3 and linear decreasing
-learning rate: 0.0001
-minibatch size: 64
-DQN width: 64
+설명
+=====
 
-scenario: single_agent
+Choose action based on q-learning algorithm
 """
 
 import numpy as np
-from agents.cdqn_fixed.agent import Agent
-from agents.simple_agent import StaticAgent as NonLearningAgent
+from agents.cdqn_fo.agent import Agent
+from agents.simple_agent import RandomAgent as NonLearningAgent
 from agents.evaluation import Evaluation
 import logging
 import config
@@ -43,7 +45,7 @@ class Trainer(object):
         self._agent_precedence = self._env.agent_precedence
 
         self._agent = Agent(self._agent_profile["predator"]["act_dim"], self._agent_profile["predator"]["obs_dim"][0])
-        self._prey_agent = NonLearningAgent(2)
+        self._prey_agent = NonLearningAgent(5)
 
         self.epsilon = 0.3
 
@@ -135,10 +137,8 @@ class Trainer(object):
             obs = self._env.reset()
             state = self._env.get_full_encoding()[:, :, 2]
             if test_flag:
-                print "\nInit"
-                print state
+                print "\nInit\n", state
             total_reward = 0
-
 
             ep_step = 0
 

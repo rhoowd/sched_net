@@ -17,8 +17,8 @@ Choose action based on q-learning algorithm
 import numpy as np
 import tensorflow as tf
 import math
-from agents.cdqn_fixed.dq_network import *
-from agents.cdqn_fixed.replay_buffer import *
+from agents.cdqn_fo.dq_network import *
+from agents.cdqn_fo.replay_buffer import *
 from agents.evaluation import Evaluation
 
 import logging
@@ -34,14 +34,15 @@ class Agent(object):
     def __init__(self, action_dim, obs_dim, name=""):
         logger.info("Centralized DQN Agent")
 
-
         self._n_predator = FLAGS.n_predator
         self._n_prey = FLAGS.n_prey
         self.map_size = FLAGS.map_size
 
+        self._obs_dim = obs_dim
 
         self._action_dim = action_dim ** self._n_predator
-        self._obs_dim = obs_dim * self._n_predator
+        self._state_dim = (self.map_size**2) * (self._n_predator + self._n_prey)
+        self._state_dim_single = (self.map_size**2)
 
         self._name = name
         self.update_cnt = 0
@@ -56,7 +57,7 @@ class Agent(object):
 
         with my_graph.as_default():
             self.sess = tf.Session(graph=my_graph, config=tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=True)))
-            self.q_network = DQNetwork(self.sess, self._obs_dim, self._action_dim)
+            self.q_network = DQNetwork(self.sess, self._state_dim, self._action_dim)
             self.sess.run(tf.global_variables_initializer())
 
         self.replay_buffer = ReplayBuffer()
@@ -65,21 +66,15 @@ class Agent(object):
         self.q_prev = None
 
     def act(self, state):
-        """
-        For single agent, we set 'halt' action (2) for agent 2
-        :param state:
-        :return:
-        """
         state_i = self.state_to_index(state)
 
-        s = np.reshape(state_i, self._obs_dim)
+        s = np.reshape(state_i, self._state_dim)
         q = self.q_network.get_q_values(s[None])[0]
 
         action_i = np.random.choice(np.where(q == np.max(q))[0])
 
         action = self.index_to_action(action_i)
 
-        # return action[0], 2
         return action[0], action[1]
 
     def train(self, state, action, reward, state_n, done):
@@ -122,10 +117,16 @@ class Agent(object):
         :param state:
         :return:
         """
-        p1, p2 = self.get_predator_pos(state)
-        ret = np.zeros(self._obs_dim)
+        # p1, p2 = self.get_predator_pos(state)
+        p1 = self.get_pos_by_id(state, 1)
+        p2 = self.get_pos_by_id(state, 2)
+        prey = self.get_pos_by_id(state, 3)
+
+        ret = np.zeros(self._state_dim)
         ret[p1] = 1.0
-        ret[p2 + 9] = 1.0
+        ret[p2 + self._state_dim_single] = 1.0
+        ret[prey + 2*self._state_dim_single] = 1.0
+
         return ret
 
     def get_predator_pos(self, state):
@@ -136,6 +137,10 @@ class Agent(object):
         """
         state_list = list(np.array(state).ravel())
         return state_list.index(1), state_list.index(2)
+
+    def get_pos_by_id(self, state, id):
+        state_list = list(np.array(state).ravel())
+        return state_list.index(id)
 
     def onehot(self, index, size):
         n_hot = np.zeros(size)
@@ -159,11 +164,11 @@ class Agent(object):
         d = 0.0
         a = 0.0
 
-        for i in range(self._obs_dim):
+        for i in range(self._state_dim):
             for j in range(self._action_dim):
                 d += math.fabs(self.q_prev[i][j] - q_next[i][j])
                 a += q_next[i][j]
-        avg = a/(self._obs_dim*self._action_dim)
+        avg = a/(self._state_dim*self._action_dim)
 
         self._eval.update_value("q_avg", avg, self.update_cnt)
         self._eval.update_value("q_diff", d, self.update_cnt)
@@ -175,16 +180,19 @@ class Agent(object):
     def q(self):
         q_value = []
         for p1 in range(self.map_size ** 2):
-            if p1 == 0:
-                continue
             for p2 in range(self.map_size ** 2):
-                if p1 == p2 or p2 == 0:
+                if p1 == p2:
                     continue
-                s = np.zeros(self._obs_dim)
-                s[p1] = 1.0
-                s[p2 + 9] = 1.0
+                for prey in range(self.map_size ** 2):
+                    if prey == p1 or prey == p2:
+                        continue
 
-                q = self.q_network.get_target_q_values(s[None])[0]
-                q_value.append(q)
+                    s = np.zeros(self._state_dim)
+                    s[p1] = 1.0
+                    s[p2 + self._state_dim_single] = 1.0
+                    s[prey + 2*self._state_dim_single] = 1.0
+
+                    q = self.q_network.get_target_q_values(s[None])[0]
+                    q_value.append(q)
 
         return q_value

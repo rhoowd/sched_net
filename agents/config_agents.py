@@ -6,10 +6,10 @@
 def config_agent(_flags):
     flags = _flags
 
-    flags.DEFINE_string("agent", "cdqn_fixed", "Agent")
+    flags.DEFINE_string("agent", "cdqn", "Agent")
 
     flags.DEFINE_integer("training_step", 10000, "Training time step")
-    flags.DEFINE_integer("testing_step", 1000, "Testing time step")
+    flags.DEFINE_integer("testing_step", 2000, "Testing time step")
     flags.DEFINE_integer("max_step", 200, "Maximum time step per episode")
     flags.DEFINE_integer("eval_step", 1000, "Number of steps before training")
     
@@ -19,13 +19,12 @@ def config_agent(_flags):
     flags.DEFINE_float("lr", 0.0001, "Learning rate")
     flags.DEFINE_float("df", 0.999, "Discount factor")
 
-
     flags.DEFINE_boolean("load_nn", False, "Load nn from file or not")
     flags.DEFINE_string("nn_file", "results/nn/s", "The name of file for loading")
     
     flags.DEFINE_boolean("train", True, "Training or testing")
     flags.DEFINE_boolean("qtrace", False, "Use q trace")
-
+    flags.DEFINE_boolean("kt", False, "Keyboard input test")
 
 
 def get_filename():

@@ -5,7 +5,8 @@ class RandomAgent(object):
         self._action_dim = action_dim
 
     def act(self, obs):
-        return np.random.randint(self._action_dim)
+        ret = np.random.randint(self._action_dim)
+        return ret
 
     def train(self, minibatch, step):
         return

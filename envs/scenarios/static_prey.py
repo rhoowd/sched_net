@@ -12,8 +12,8 @@ class Scenario(BaseScenario):
     def reset_world(self, world):
         world.empty_grid()
 
-        # prey_pos = np.random.choice([map_size - 1, 0], 2)
-        prey_pos = [0, 0]
+        prey_pos = np.random.choice([map_size - 1, 0], 2)
+        # prey_pos = [0, 0]
         prey_idx = self.atype_to_idx["prey"][0]
         world.placeObj(world.agents[prey_idx], top=prey_pos, size=(1,1))
 

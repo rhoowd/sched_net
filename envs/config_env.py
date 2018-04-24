@@ -20,4 +20,4 @@ def get_filename():
     import config
     FLAGS = config.flags.FLAGS
 
-    return "s-"+FLAGS.scenario
+    return "s-"+FLAGS.scenario+"-map-"+str(FLAGS.map_size)

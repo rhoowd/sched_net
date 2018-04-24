@@ -6,10 +6,10 @@
 def config_agent(_flags):
     flags = _flags
 
-    flags.DEFINE_string("agent", "cdqn", "Agent")
+    flags.DEFINE_string("agent", "cdqn_po", "Agent")
 
-    flags.DEFINE_integer("training_step", 10000, "Training time step")
-    flags.DEFINE_integer("testing_step", 2000, "Testing time step")
+    flags.DEFINE_integer("training_step", 5000, "Training time step")
+    flags.DEFINE_integer("testing_step", 1000, "Testing time step")
     flags.DEFINE_integer("max_step", 200, "Maximum time step per episode")
     flags.DEFINE_integer("eval_step", 1000, "Number of steps before training")
     

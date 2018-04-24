@@ -93,7 +93,7 @@ class Scenario(BaseScenario):
                 # return max(10 - world.step_cnt, 0)
                 return 1
             else:
-                reward = 0
+                reward = -0.01
                 for i in self.atype_to_idx["prey"]:
                     prey = world.agents[i]
                     if prey.cannot_move():

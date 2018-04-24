@@ -9,6 +9,9 @@ import agents.config_agents as config_agent
 
 flags = tf.flags
 
+flags.DEFINE_integer("seed", 0, "Random seed number")
+flags.DEFINE_string("folder", "default", "Result file folder name")
+
 config_env.config_env(flags)
 config_agent.config_agent(flags)
 
@@ -17,10 +20,15 @@ now = time.localtime()
 s_time = "%02d%02d%02d%02d%02d" % (now.tm_mon, now.tm_mday, now.tm_hour, now.tm_min, now.tm_sec)
 file_name = str(flags.FLAGS.n_predator) + "-"
 file_name += config_env.get_filename() + "-" + config_agent.get_filename()
-file_name += "-" + s_time
+file_name += "-seed-"+str(flags.FLAGS.seed)+"-" + s_time
 result = logging.getLogger('Result')
 result.setLevel(logging.INFO)
-result_fh = logging.FileHandler("./results/eval/r-" + file_name + ".txt")
+
+if flags.FLAGS.folder == "default":
+    result_fh = logging.FileHandler("./results/eval/r-" + file_name + ".txt")
+else:
+    result_fh = logging.FileHandler("./results/eval/"+ flags.FLAGS.folder +"/r-" + file_name + ".txt")
+
 result_fm = logging.Formatter('[%(filename)s:%(lineno)s] %(asctime)s\t%(message)s')
 result_fh.setFormatter(result_fm)
 result.addHandler(result_fh)

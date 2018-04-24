@@ -21,4 +21,4 @@ def get_filename():
     import config
     FLAGS = config.flags.FLAGS
 
-    return "s-"+FLAGS.scenario+"-h-"+str(FLAGS.history_len)
+    return "s-"+FLAGS.scenario

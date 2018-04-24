@@ -2,3 +2,4 @@
 results/*
 .idea
 *.log
+*.DS_Store*

@@ -2,16 +2,8 @@
 # coding=utf8
 
 """
-===========================================
- :mod:`qlearn` Q-Learning
-===========================================
-.. moduleauthor:: Daewoo Kim
-.. note:: note...
 
-설명
-=====
-
-Choose action based on q-learning algorithm
+Learing rate should be large in this case, For example 0.01
 """
 
 import numpy as np
@@ -149,7 +141,7 @@ class Trainer(object):
                 state = state_n
                 total_reward += np.sum(reward)
 
-                if is_episode_done(done, step):
+                if is_episode_done(done, step, "test") or ep_step > FLAGS.max_step:
                     print "\tstep:", step, "\tep_step:", ep_step, "\treward", total_reward
                     break
 
@@ -157,11 +149,25 @@ class Trainer(object):
 
 
 
-def is_episode_done(done, step):
+# def is_episode_done(done, step):
+#
+#     if sum(done) > 0 or step > FLAGS.training_step:
+#         return True
+#     else:
+#         return False
 
-    if sum(done) > 0 or step > FLAGS.training_step:
-        return True
+
+def is_episode_done(done, step, e_type="train"):
+
+    if e_type == "test":
+        if sum(done) > 0 or step >= FLAGS.testing_step:
+            return True
+        else:
+            return False
+
     else:
-        return False
-
+        if sum(done) > 0 or step >= FLAGS.training_step:
+            return True
+        else:
+            return False
 

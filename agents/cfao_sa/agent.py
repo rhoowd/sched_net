@@ -2,28 +2,29 @@
 # coding=utf8
 
 """
-===========================================
- :mod:`cac` Centralized Actor-Critic
-===========================================
+===================================================================================
+ :mod:`cfao` Critich with full state and Actor with limitied obs,  Separate Action
+===================================================================================
 .. moduleauthor:: Daewoo Kim
 .. note:: note...
 
-설명
-map 3 일때
- CDQN - 10
- Random - 80
- CAC - 20
 =====
 
-Choose action based on q-learning algorithm
+40000까지 돌리면 됨
+cfao_sa 2-s-pursuit-map-3-a-cfao_sa-lr-0.0001-ms-64-seed-0-0430000319
+h_num = 64
+lr_actor = 1e-5  # learning rate for the actor
+lr_critic = 1e-4  # learning rate for the critic
+tau = 5e-2  # soft target update rate
 """
 
 import numpy as np
 import tensorflow as tf
 import sys
-from agents.cac_fo.replay_buffer import *
-from agents.cac_fo.ac_network import ActorNetwork
-from agents.cac_fo.ac_network import CriticNetwork
+from agents.cfao_sa.replay_buffer import *
+
+from agents.cfao_sa.ac_network import ActorNetwork
+from agents.cfao_sa.ac_network import CriticNetwork
 from agents.evaluation import Evaluation
 
 import logging
@@ -37,7 +38,7 @@ result = logging.getLogger('Result')
 class Agent(object):
 
     def __init__(self, action_dim, obs_dim, name=""):
-        logger.info("Centralized Actor-Critic")
+        logger.info("Critic with Full state, Actor with limited obs, Separate Action")
 
         self._n_predator = FLAGS.n_predator
         self._n_prey = FLAGS.n_prey
@@ -56,10 +57,11 @@ class Agent(object):
         tf.reset_default_graph()
         my_graph = tf.Graph()
 
+        self.input_dim = 3*self._obs_dim*self._n_predator
+
         with my_graph.as_default():
             self.sess = tf.Session(graph=my_graph, config=tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=True)))
-
-            self._actor = ActorNetwork(self.sess, self._state_dim, self._action_dim, self._name)
+            self._actor = ActorNetwork(self.sess, self.input_dim, action_dim * self._n_predator, 'sa')
             self._critic = CriticNetwork(self.sess, self._state_dim, self._action_dim, self._name)
 
             self.sess.run(tf.global_variables_initializer())
@@ -69,42 +71,46 @@ class Agent(object):
         self._eval = Evaluation()
         self.q_prev = None
 
-    def act(self, state):
+    def act(self, state, obs):
 
-        state_i = self.state_to_index(state)
-        s = np.reshape(state_i, self._state_dim)
-        qval = self._actor.action_for_state(s[None])
+        obs_i = self.obs_to_onehot(obs)
+        o = np.reshape(obs_i, self.input_dim)
 
-        if np.isnan(qval).any():
+        q = self._actor.action_for_state(o[None])
+
+        if np.isnan(q).any():
             print "Value Error: nan"
-            print qval
+            print q
             sys.exit()
 
-        action_i = np.random.choice(len(qval[0]), p=qval[0])
-        action = self.index_to_action(action_i)
+        a1 = np.random.choice(self._action_dim_single, p=q[0][0:5])
+        a2 = np.random.choice(self._action_dim_single, p=q[0][5:10])
 
-        return action[0], action[1]
+        return a1, a2
 
-    def train(self, state, action, reward, state_n, done):
+    def train(self, state, obs, action, reward, state_n, obs_n, done):
 
         a = self.action_to_index(action[0], action[1])
+        a_h = self.action_to_nhot(a, 10)
         s = self.state_to_index(state)
         s_n = self.state_to_index(state_n)
         r = np.sum(reward)
+        o = self.obs_to_onehot(obs)
 
-        self.store_sample(s, a, r, s_n, done)
+        self.store_sample(s, a, r, s_n, done, o, a_h)
         self.update_ac()
+
         return 0
 
-    def store_sample(self, s, a, r, s_n, done):
+    def store_sample(self, s, a, r, s_n, done, o, a_h):
 
-        self.replay_buffer.add_to_memory((s, a, r, s_n, done))
+        self.replay_buffer.add_to_memory((s, a, r, s_n, done, o, a_h))
         return 0
 
     def update_ac(self):
         if FLAGS.qtrace:
             self.update_cnt += 1
-            if self.update_cnt % 2500 == 0:
+            if self.update_cnt % 1000 == 0:
                 self.q()
 
         if len(self.replay_buffer.replay_memory) < 10 * FLAGS.m_size:
@@ -117,19 +123,37 @@ class Agent(object):
         r = np.asarray([elem[2] for elem in minibatch])
         s_ = np.asarray([elem[3] for elem in minibatch])
         d = np.asarray([elem[4] for elem in minibatch])
+        o = np.asarray([elem[5] for elem in minibatch])
+        a_h = np.asarray([elem[6] for elem in minibatch])
 
-        if FLAGS.use_action_in_critic:
-            a_ = self._actor.target_action_for_next_state(s_).argmax(axis=1)  # get actions for next state
-            td_error, _ = self._critic.training_critic(s, a, r, s_, a_, d)  # train critic
-            _ = self._actor.training_actor(s, a, td_error)  # train actor
-            _ = self._actor.training_target_actor()  # train slow target actor
-        else:
-            td_error, _ = self._critic.training_critic(s, a, r, s_, a, d)  # train critic
-            _ = self._actor.training_actor(s, a, td_error)  # train actor
+        td_error, _ = self._critic.training_critic(s, a, r, s_, a, d)  # train critic
+        _ = self._actor.training_actor(o, a_h, td_error)  # train actor
 
         _ = self._critic.training_target_critic()  # train slow target critic
 
         return 0
+
+    def obs_to_onehot(self, obs):
+        ret = list()
+
+        for a in range(self._n_predator):
+            wall = np.zeros(self._obs_dim)
+            predator = np.zeros(self._obs_dim)
+            prey = np.zeros(self._obs_dim)
+
+            for i in range(self._obs_dim):
+                if obs[a][i] == 1:
+                    wall[i] = 1
+                elif obs[a][i] == 3:
+                    predator[i] = 1
+                elif obs[a][i] == 4:
+                    prey[i] = 1
+
+            ret.append(np.concatenate([wall, predator, prey]))
+
+        ret = np.concatenate(ret)
+        return ret
+
 
     def state_to_index(self, state):
         """
@@ -172,6 +196,15 @@ class Agent(object):
 
     def action_to_index(self, a1, a2):
         return a1 + a2 * 5
+
+    def action_to_nhot(self, a_i, size):
+        a1, a2 = self.index_to_action(a_i)
+        ret = np.zeros(size)
+
+        ret[a1] = 1.0
+        ret[a2+5] = 1.0
+
+        return ret
 
     def q(self):
         q_a = 0

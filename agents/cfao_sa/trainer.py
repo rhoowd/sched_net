@@ -2,9 +2,9 @@
 # coding=utf8
 
 """
-===========================================
- :mod:`qlearn` Q-Learning
-===========================================
+============================================================================
+ :mod:`cfao` Critic with Full state, Actor with limited obs separate action
+============================================================================
 .. moduleauthor:: Daewoo Kim
 .. note:: note...
 
@@ -16,7 +16,7 @@ python main.py --agent cdqn_fo --training_step 50000 --map_size 4 --scenario pur
 """
 
 import numpy as np
-from agents.cdqn_fo.agent import Agent
+from agents.cfao_sa.agent import Agent
 from agents.simple_agent import RandomAgent as NonLearningAgent
 from agents.evaluation import Evaluation
 import logging
@@ -72,8 +72,15 @@ class Trainer(object):
                 obs_n, reward, done, info = self._env.step(action)
                 state_n = self._env.get_full_encoding()[:, :, 2]
 
+                # print obs_n
+                # imap = np.array(obs_n[0]).reshape((3, 3))
+                # print state_n
+                # print np.array(obs_n[0]).reshape((3, 3))
+                # print np.array(obs_n[1]).reshape((3, 3))
+                # print ""
+
                 done_single = sum(done) > 0
-                self.train_agents(state, action, reward, state_n, done_single)
+                self.train_agents(state, obs, action, reward, state_n, obs_n, done_single)
 
                 obs = obs_n
                 state = state_n
@@ -113,7 +120,7 @@ class Trainer(object):
                 act_n.append(action)
                 continue
         else:
-            action_list = self._agent.act(state)
+            action_list = self._agent.act(state, obs)
             for a in action_list:
                 act_n.append(a)
 
@@ -123,8 +130,8 @@ class Trainer(object):
 
         return np.array(act_n, dtype=np.int32)
 
-    def train_agents(self, state, action, reward, state_n, done):
-        self._agent.train(state, action, reward, state_n, done)
+    def train_agents(self, state, obs, action, reward, state_n, obs_n, done):
+        self._agent.train(state, obs, action, reward, state_n, obs_n, done)
 
     def test(self, curr_ep=None):
 

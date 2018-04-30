@@ -54,7 +54,7 @@ class Trainer(object):
 
         step = 0
         episode = 0
-        print_flag = False
+        print_flag = True
 
         while step < training_step:
             episode += 1

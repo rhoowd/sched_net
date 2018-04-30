@@ -21,7 +21,7 @@ Choose action based on q-learning algorithm
 import numpy as np
 import tensorflow as tf
 import sys
-from agents.cac_fo.replay_buffer import *
+from replay_buffer import ReplayBuffer
 from agents.cac_fo.ac_network import ActorNetwork
 from agents.cac_fo.ac_network import CriticNetwork
 from agents.evaluation import Evaluation

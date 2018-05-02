@@ -24,11 +24,12 @@ class Trainer(object):
         self._env = env
         self._eval = Evaluation()
         self._agent_profile = self._env.get_agent_profile()
-        
+        self._state_dim = self._env.get_global_state().shape[0]
+
         # joint CAC predator agent
         self._predator_agent = JointPredatorAgentFO(self._agent_profile['predator']['n_agent'],
                                                     self._agent_profile['predator']['act_dim'],
-                                                    self._agent_profile['predator']['obs_dim'][0])
+                                                    self._state_dim)
         # randomly moving prey agent TODO fix later..
         self._prey_agent = []
         for _ in range(self._agent_profile['prey']['n_agent']):
@@ -40,26 +41,31 @@ class Trainer(object):
 
         global_step = 0
         episode_num = 0
-        print_flag = False
+        print_flag = True
 
         while global_step < training_step:
             episode_num += 1
             step_per_ep = 0
             obs_n = self._env.reset()
+            state = self._env.get_global_state()
             total_reward = 0
 
             while True:
                 global_step += 1
                 step_per_ep += 1
 
-                action_n = self.get_action(obs_n, global_step)
+                # action_n = self.get_action(obs_n, global_step)
+                action_n = self.get_action(state, global_step)
 
                 obs_n_next, reward_n, done_n, _ = self._env.step(action_n)
+                state_next = self._env.get_global_state()
 
                 done_single = sum(done_n) > 0
-                self.train_agents(obs_n, action_n, reward_n, obs_n_next, done_single)
+                # self.train_agents(obs_n, action_n, reward_n, obs_n_next, done_single)
+                self.train_agents(state, action_n, reward_n, state_next, done_single)
 
                 obs_n = obs_n_next
+                state = state_next
                 # for i, cell in enumerate(obs_n[0].reshape(16, 5)):
                 #     if max(cell) == 0:
                 #         print '-',
@@ -79,8 +85,9 @@ class Trainer(object):
 
         self._eval.summarize()
 
-    def get_action(self, obs_n, global_step, train=True):
-        act_n = [0] * len(obs_n)
+    def get_action(self, state, global_step, train=True):
+        act_n = [0] * (self._agent_profile['predator']['n_agent'] +
+                       self._agent_profile['prey']['n_agent'])
         self.epsilon = max(self.epsilon - epsilon_dec, epsilon_min)
 
         # Action of predator
@@ -89,8 +96,9 @@ class Trainer(object):
             predator_action = self._predator_agent.explore()
         else:
             # exploitation of centralized predator agent
-            predator_obs = [obs_n[i] for i in self._agent_profile['predator']['idx']]
-            predator_action = self._predator_agent.act(predator_obs)
+            #predator_obs = [obs_n[i] for i in self._agent_profile['predator']['idx']]
+            #predator_action = self._predator_agent.act(predator_obs)
+            predator_action = self._predator_agent.act([state])
 
         for i, idx in enumerate(self._agent_profile['predator']['idx']):
             act_n[idx] = predator_action[i]
@@ -101,14 +109,14 @@ class Trainer(object):
 
         return np.array(act_n, dtype=np.int32)
 
-    def train_agents(self, obs_n, action_n, reward_n, obs_n_next, done):
+    def train_agents(self, state, action_n, reward_n, state_next, done):
         # train predator only
-        predator_obs = [obs_n[i] for i in self._agent_profile['predator']['idx']]
+        # predator_obs = [obs_n[i] for i in self._agent_profile['predator']['idx']]
         predator_action = [action_n[i] for i in self._agent_profile['predator']['idx']]
         predator_reward = [reward_n[i] for i in self._agent_profile['predator']['idx']]
-        predator_obs_next = [obs_n_next[i] for i in self._agent_profile['predator']['idx']]
-        self._predator_agent.train(predator_obs, predator_action, predator_reward,
-                                   predator_obs_next, done)
+        # predator_obs_next = [obs_n_next[i] for i in self._agent_profile['predator']['idx']]
+        self._predator_agent.train([state], predator_action, predator_reward,
+                                   [state_next], done)
 
     def test(self, curr_ep=None):
 
@@ -121,6 +129,7 @@ class Trainer(object):
             episode_num += 1
             step_per_ep = 0
             obs_n = self._env.reset()
+            state = self._env.get_global_state()
             # state = self._env.get_full_encoding()[:, :, 2]
             if test_flag:
                 print "\nInit\n", obs_n[0]
@@ -131,8 +140,9 @@ class Trainer(object):
                 global_step += 1
                 step_per_ep += 1
 
-                action_n = self.get_action(obs_n, global_step, False)
+                action_n = self.get_action(state, global_step, False)
                 obs_n_next, reward_n, done_n, _ = self._env.step(action_n)
+                state_next = self._env.get_global_state()
                 # state_n = self._env.get_full_encoding()[:, :, 2]
 
                 if test_flag:
@@ -143,7 +153,7 @@ class Trainer(object):
                     print obs_n[0]
 
                 obs_n = obs_n_next
-                # state = state_n
+                state = state_next
                 total_reward += np.sum(reward_n)
 
                 if is_episode_done(done_n, global_step, "test") or step_per_ep > FLAGS.max_step:

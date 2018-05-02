@@ -141,5 +141,5 @@ class MultiAgentEnv(gym.Env):
             return 0.0
         return self.reward_callback(agent, self.world)
 
-    def get_full_encoding(self):
-        return self.world.get_full_encoding()
+    def get_global_state(self):
+        return self.world.get_global_state()

@@ -88,7 +88,8 @@ class JointPredatorAgentFO(object):
 
     def act(self, obs_list):
 
-        assert len(obs_list[0]) == self._obs_dim_per_unit
+        # assert len(obs_list[0]) == self._obs_dim_per_unit
+        # TODO just argmax when testing..
 
         # fully-observed, only use the first obs
         action_prob = self._actor.action_for_state(obs_list[0].reshape(1, self._obs_dim))

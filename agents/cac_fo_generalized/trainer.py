@@ -98,7 +98,7 @@ class Trainer(object):
             # exploitation of centralized predator agent
             #predator_obs = [obs_n[i] for i in self._agent_profile['predator']['idx']]
             #predator_action = self._predator_agent.act(predator_obs)
-            predator_action = self._predator_agent.act([state])
+            predator_action = self._predator_agent.act(state)
 
         for i, idx in enumerate(self._agent_profile['predator']['idx']):
             act_n[idx] = predator_action[i]
@@ -115,8 +115,8 @@ class Trainer(object):
         predator_action = [action_n[i] for i in self._agent_profile['predator']['idx']]
         predator_reward = [reward_n[i] for i in self._agent_profile['predator']['idx']]
         # predator_obs_next = [obs_n_next[i] for i in self._agent_profile['predator']['idx']]
-        self._predator_agent.train([state], predator_action, predator_reward,
-                                   [state_next], done)
+        self._predator_agent.train(state, predator_action, predator_reward,
+                                   state_next, done)
 
     def test(self, curr_ep=None):
 

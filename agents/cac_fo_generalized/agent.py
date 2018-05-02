@@ -86,13 +86,12 @@ class JointPredatorAgentFO(object):
         return reduce(lambda x, y: x * self._action_dim_per_unit + y,
                       reversed(action_list))
 
-    def act(self, obs_list):
+    def act(self, obs):
 
-        # assert len(obs_list[0]) == self._obs_dim_per_unit
         # TODO just argmax when testing..
+        # use obs_list in partially observable environment
 
-        # fully-observed, only use the first obs
-        action_prob = self._actor.action_for_state(obs_list[0].reshape(1, self._obs_dim))
+        action_prob = self._actor.action_for_state(obs.reshape(1, self._obs_dim))
 
         if np.isnan(action_prob).any():
             print "Value Error: nan"
@@ -103,13 +102,15 @@ class JointPredatorAgentFO(object):
 
         return self.decompose_joint_action(joint_action_index)
 
-    def train(self, obs_list, action_list, reward_list, 
-              obs_next_list, done):
+    def train(self, obs, action_list, reward_list, 
+              obs_next, done):
 
-        s = obs_list[0]
+        # use obs_list in partially observable environment
+
+        s = obs
         a = self.compose_joint_action(action_list)
         r = np.sum(reward_list)
-        s_ = obs_next_list[0]
+        s_ = obs_next
 
         self.store_sample(s, a, r, s_, done)
         self.update_ac()

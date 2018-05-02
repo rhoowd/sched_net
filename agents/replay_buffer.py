@@ -5,8 +5,8 @@ import numpy as np
 
 FLAGS = config.flags.FLAGS
 
-replay_memory_capacity = FLAGS.replay_buffer_capacity  # capacity of experience replay memory
-minibatch_size = FLAGS.minibatch_size  # size of minibatch from experience replay memory for updates
+replay_memory_capacity = FLAGS.b_size  # capacity of experience replay memory
+minibatch_size = FLAGS.m_size  # size of minibatch from experience replay memory for updates
 trace_length = FLAGS.rnn_trace_len
 
 class ReplayBuffer:

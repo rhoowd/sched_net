@@ -6,7 +6,7 @@
 def config_agent(_flags):
     flags = _flags
 
-    flags.DEFINE_string("agent", "cac_fo", "Agent")
+    flags.DEFINE_string("agent", "schedule", "Agent")
 
     flags.DEFINE_integer("training_step", 2000, "Training time step")
     flags.DEFINE_integer("testing_step", 1000, "Testing time step")

@@ -98,16 +98,13 @@ class JointPredatorAgentFO(object):
         action_prob = self._actor.action_for_state(obs.reshape(1, self._obs_dim))
 
         if np.isnan(action_prob).any():
-            print("Value Error: nan")
-            print(action_prob)
-            sys.exit()
+            raise ValueError('action_prob contains NaN')
 
         joint_action_index = np.random.choice(len(action_prob[0]), p=action_prob[0])
 
         return self.decompose_joint_action(joint_action_index)
 
-    def train(self, obs, action_list, reward_list, 
-              obs_next, done):
+    def train(self, obs, action_list, reward_list, obs_next, done):
 
         # use obs_list in partially observable environment
 

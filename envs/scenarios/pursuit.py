@@ -1,3 +1,5 @@
+from __future__ import print_function
+from __future__ import division
 import numpy as np
 from collections import deque
 from envs.grid_core import World
@@ -101,7 +103,7 @@ class Scenario(BaseScenario):
                 for i in self.atype_to_idx["prey"]:
                     prey = world.agents[i]
                     if prey.cannot_move():
-                        # print "captured"
+                        # print("captured")
                         self.prey_captured = True
                         reward = 1
                         return reward
@@ -116,7 +118,7 @@ class Scenario(BaseScenario):
         return 0
 
     def observation(self, agent, world):
-        # print agent.get_obs.shape
+        # print(agent.get_obs.shape)
         obs = np.array(agent.get_obs()).flatten()
         return obs
 

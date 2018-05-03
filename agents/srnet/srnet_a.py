@@ -1,3 +1,5 @@
+from __future__ import print_function
+from __future__ import division
 import tensorflow as tf
 
 num_agent = 2
@@ -168,9 +170,9 @@ if __name__ == '__main__':
     conn_i = [[False, True, False], [False, True, False], [False, True, False]]
     a, m, r = sess.run(srnet, feed_dict={obs: [[1, 2, 3, 4, 5, 6, 7, 8, 9]], conn: conn_i})
 
-    print "Actions:", a
-    print "Message:", m
-    print "Recv.  :", r
+    print("Actions:", a)
+    print("Message:", m)
+    print("Recv.  :", r)
 
     exit()
 
@@ -185,6 +187,6 @@ if __name__ == '__main__':
     conn_i = [[False, True, False], [False, False, False], [False, True, False]]
     a, m, r = sess.run(srnet, feed_dict={obs: [[1, 2, 3, 4, 5, 6, 7, 8, 9]], conn: conn_i})
 
-    print "Actions:", a
-    print "Message:", m
-    print "Recv.  :", r
+    print("Actions:", a)
+    print("Message:", m)
+    print("Recv.  :", r)

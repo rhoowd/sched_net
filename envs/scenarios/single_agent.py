@@ -1,3 +1,5 @@
+from __future__ import print_function
+from __future__ import division
 import numpy as np
 from envs.scenarios.pursuit import Scenario as BaseScenario
 import config
@@ -8,7 +10,7 @@ map_size = FLAGS.map_size
 class Scenario(BaseScenario):
     def __init__(self):
         super(Scenario, self).__init__()
-        print "Single agent scenario"
+        print("Single agent scenario")
 
     def reset_world(self, world):
         world.empty_grid()

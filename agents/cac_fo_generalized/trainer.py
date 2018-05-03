@@ -1,3 +1,5 @@
+from __future__ import print_function
+from __future__ import division
 import numpy as np
 from agents.cac_fo_generalized.agent import JointPredatorAgentFO
 from agents.simple_agent import RandomAgent
@@ -68,16 +70,16 @@ class Trainer(object):
                 state = state_next
                 # for i, cell in enumerate(state.reshape(16, 5)):
                 #     if max(cell) == 0:
-                #         print '-',
+                #         print('-',)
                 #     else:
-                #         print np.argmax(cell),
+                #         print(np.argmax(cell),)
                 #     if i % 4 == 4 - 1:
                 #         print
                 total_reward += np.sum(reward_n)
 
                 if is_episode_done(done_n, global_step):
                     if print_flag:
-                        print "[train_ep %d]" % (episode_num),"\tstep:", global_step, "\tstep_per_ep:", step_in_ep, "\treward", total_reward
+                        print("[train_ep %d]" % (episode_num),"\tstep:", global_step, "\tstep_per_ep:", step_in_ep, "\treward", total_reward)
                     break
 
             if episode_num % FLAGS.eval_step == 0:
@@ -131,7 +133,7 @@ class Trainer(object):
             obs_n = self._env.reset()
             state = self._env.get_global_state()
             if test_flag:
-                print "\nInit\n", obs_n[0]
+                print("\nInit\n", obs_n[0])
             total_reward = 0
 
             while True:
@@ -147,8 +149,8 @@ class Trainer(object):
                     aa = raw_input('>')
                     if aa == 'c':
                         test_flag = False
-                    print action_n
-                    print obs_n[0]
+                    print(action_n)
+                    print(obs_n[0])
 
                 obs_n = obs_n_next
                 state = state_next
@@ -157,7 +159,7 @@ class Trainer(object):
                 if is_episode_done(done_n, global_step, "test") or step_in_ep > FLAGS.max_step:
                     break
 
-        print "Test result: Average steps to capture: ", curr_ep, float(global_step)/episode_num
+        print("Test result: Average steps to capture: ", curr_ep, float(global_step)/episode_num)
         self._eval.update_value("test_result", float(global_step)/episode_num, curr_ep)
 
 

@@ -13,7 +13,8 @@
 
 Choose action based on q-learning algorithm
 """
-
+from __future__ import print_function
+from __future__ import division
 import numpy as np
 import tensorflow as tf
 import math
@@ -175,7 +176,7 @@ class Agent(object):
 
         self.q_prev = q_next
 
-        print self.update_cnt, d, avg
+        print(self.update_cnt, d, avg)
 
     def q(self):
         q_value = []

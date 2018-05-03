@@ -5,7 +5,8 @@
 
 Learing rate should be large in this case, For example 0.01
 """
-
+from __future__ import print_function
+from __future__ import division
 import numpy as np
 import logging
 import config
@@ -53,7 +54,7 @@ class Trainer(object):
             total_reward = 0
 
             if print_flag:
-                print "[train_ep %d]" % (episode),
+                print("[train_ep %d]" % (episode),)
             ep_step = 0
 
             while True:
@@ -73,7 +74,7 @@ class Trainer(object):
 
                 if is_episode_done(done, step):
                     if print_flag:
-                        print "\tstep:", step, "\tep_step:", ep_step, "\treward", total_reward
+                        print("\tstep:", step, "\tep_step:", ep_step, "\treward", total_reward)
                     break
 
     def get_action(self, obs, step, state, train=True):
@@ -115,7 +116,7 @@ class Trainer(object):
 
     def test(self):
 
-        print "\n== Test ==\n"
+        print("\n== Test ==\n")
         step = 0
         episode = 0
 
@@ -126,7 +127,7 @@ class Trainer(object):
 
             total_reward = 0
 
-            print "[test_ep  %d]" % (episode),
+            print("[test_ep  %d]" % (episode),)
             ep_step = 0
 
             while True:
@@ -142,10 +143,10 @@ class Trainer(object):
                 total_reward += np.sum(reward)
 
                 if is_episode_done(done, step, "test") or ep_step > FLAGS.max_step:
-                    print "\tstep:", step, "\tep_step:", ep_step, "\treward", total_reward
+                    print("\tstep:", step, "\tep_step:", ep_step, "\treward", total_reward)
                     break
 
-        print "\nTest result:\n Average steps to capture: ", float(step)/episode, "\n"
+        print("\nTest result:\n Average steps to capture: ", float(step)/episode, "\n")
 
 
 

@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # coding=utf8
+from __future__ import print_function
+from __future__ import division
 import logging
 import make_env
 import agents
@@ -37,7 +39,7 @@ if __name__ == '__main__':
     logger_agent.info('Agent: {}'.format(FLAGS.agent))
     trainer = agents.load(FLAGS.agent+"/trainer.py").Trainer(env)
 
-    print FLAGS.agent, config.file_name
+    print(FLAGS.agent, config.file_name)
 
     # start learning
     if FLAGS.train:
@@ -45,6 +47,6 @@ if __name__ == '__main__':
         trainer.learn()
         finish_time = time.time()
         trainer.test()
-        print "TRAINING TIME (sec)", finish_time - start_time
+        print("TRAINING TIME (sec)", finish_time - start_time)
     else:
         trainer.test()

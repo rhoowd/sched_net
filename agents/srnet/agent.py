@@ -11,7 +11,8 @@
 =====
 
 """
-
+from __future__ import print_function
+from __future__ import division
 import numpy as np
 import tensorflow as tf
 import sys
@@ -72,8 +73,8 @@ class Agent(object):
         q = self._actor.action_for_state(o[None])
 
         if np.isnan(q).any():
-            print "Value Error: nan"
-            print q
+            print("Value Error: nan")
+            print(q)
             sys.exit()
 
         a1 = np.random.choice(self._action_dim_single, p=q[0][0:5])
@@ -220,4 +221,4 @@ class Agent(object):
                         q_value.append(q)
                         q_a += q[0][0][0]
 
-        print self.update_cnt, q_a/len(q_value)
+        print(self.update_cnt, q_a/len(q_value))

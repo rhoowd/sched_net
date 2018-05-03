@@ -13,7 +13,8 @@
 
 Choose action based on q-learning algorithm
 """
-
+from __future__ import print_function
+from __future__ import division
 import numpy as np
 import logging
 import config
@@ -45,8 +46,8 @@ class Agent(object):
 
     def learn(self, train=True):
 
-        print self.index_to_action(1)
-        print self.action_to_index(self.index_to_action(1))
+        print(self.index_to_action(1))
+        print(self.action_to_index(self.index_to_action(1)))
         logger.debug('Start running (train: {})'.format(train))
 
         episode_cnt = 0
@@ -64,7 +65,7 @@ class Agent(object):
                 # action_n = self.act_n(obs_n, episode_cnt)
                 prev_obs = obs_n
                 obs_n, reward_n, done_n, info_n = self._env.step(action_n)
-                # print "obs and reward", obs_n, reward_n, done_n
+                # print("obs and reward", obs_n, reward_n, done_n)
 
                 self.update_q_table(prev_obs[0], action_n[0], reward_n[0], obs_n[0])
 
@@ -74,7 +75,7 @@ class Agent(object):
 
                 if self.step_cnt % 100 == 0:
                     success_rate, step_per_episode = self.test()
-                    print "Step:", self.step_cnt, "\tEpisode:", episode_cnt, "\tSuccess rate: ", success_rate, "\tStep per episode:", step_per_episode
+                    print("Step:", self.step_cnt, "\tEpisode:", episode_cnt, "\tSuccess rate: ", success_rate, "\tStep per episode:", step_per_episode)
                     result.info("qlearn step "+str(self.step_cnt)+" eps "+str(episode_cnt)+" success_rate "+str(success_rate)+" step_per_episod "+str(step_per_episode))
 
                 if done_n[0]:
@@ -85,8 +86,8 @@ class Agent(object):
             if self.step_cnt > self.num_step:
                 break
 
-        print "Q-table:"
-        print self.q_table
+        print("Q-table:")
+        print(self.q_table)
         self.print_optimal_action()
 
     def test(self):
@@ -124,16 +125,16 @@ class Agent(object):
         for i in range(self.num_discrete_obs):
             action = np.argmax(self.q_table[i,:] + np.random.randn(1, 4) / (3000+1))
             if i % self.num_obs_side == 0:
-                print ""
+                print("")
             if action == 0:
-                print '↓',
+                print('↓',)
             elif action == 1:
-                print '↑',
+                print('↑',)
             elif action == 2:
-                print '→',
+                print('→',)
             elif action == 3:
-                print '←',
-        print ""
+                print('←',)
+        print("")
 
     def act_n(self, obs_n, step, train=True):
         action_n = []
@@ -151,11 +152,11 @@ class Agent(object):
 
     def train(self, state, action, reward, state_n):
 
-        # print "reward", reward, np.sum(reward)
-        # print "state", state
-        # print "action", action
-        # print "state_n", state_n
-        # print ""
+        # print("reward", reward, np.sum(reward))
+        # print("state", state)
+        # print("action", action)
+        # print("state_n", state_n)
+        # print("")
 
         a = self.action_to_index(action[0], action[1])
         s = self.state_to_index(state)

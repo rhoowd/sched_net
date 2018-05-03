@@ -1,3 +1,5 @@
+from __future__ import print_function
+from __future__ import division
 from agents.replay_buffer import ReplayBuffer
 from agents.ind_ac.agent import Agent
 from agents.simple_agent import StaticAgent as NonLearningAgent
@@ -96,8 +98,8 @@ class Trainer():
             qval = agent.act(obs_n[i])
             
             if np.isnan(qval).any():
-                print "Value Error: nan"
-                print qval
+                print("Value Error: nan")
+                print(qval)
                 sys.exit()
 
             if train:
@@ -105,7 +107,7 @@ class Trainer():
             else:
                 act_n.append(np.random.choice(len(qval[0]),p=qval[0]))
                 # act_n.append(np.argmax(qval))
-                print qval
+                print(qval)
 
         return np.array(act_n, dtype=np.int32)
 
@@ -128,7 +130,7 @@ class Trainer():
             obs_n = self._env.reset()
             total_reward = np.zeros(FLAGS.n_predator)
 
-            print "===== episode %d =====" %(episode)
+            print("===== episode %d =====" %(episode))
 
             # for ep_step in xrange(1, max_step+1):
             ep_step = 0
@@ -174,7 +176,7 @@ class Trainer():
                 if step == training_step or sum(done_n)>0:
                     break
             
-            print step, ep_step, reward_n, total_reward, self.epsilon
+            print(step, ep_step, reward_n, total_reward, self.epsilon)
 
         self.test()
 
@@ -185,9 +187,9 @@ class Trainer():
         for episode in range(5):
             obs_n = self._env.reset()
 
-            print "======================"
-            print "===== episode %d =====" %(episode)
-            print "======================"
+            print("======================")
+            print("===== episode %d =====" %(episode))
+            print("======================")
 
             total_reward = np.zeros(FLAGS.n_predator)
             for ep_step in xrange(1, testing_step+1):
@@ -199,15 +201,15 @@ class Trainer():
                 shape = int(np.sqrt(pred_obs[0].shape[0]/(FLAGS.history_len)))
                 minimap = np.array(pred_obs).reshape((self._n_predator, FLAGS.history_len,shape,shape))
 
-                print full_map
-                print minimap[0, -1], act_n[0], reward_n[0]
-                print minimap[1, -1], act_n[1], reward_n[1]
+                print(full_map)
+                print(minimap[0, -1], act_n[0], reward_n[0])
+                print(minimap[1, -1], act_n[1], reward_n[1])
 
                 obs_n = obs_n_next
                 total_reward += np.array(reward_n)[self._agent_profile["predator"]["idx"]]
 
                 if ep_step % 15 == 0:
-                    print ep_step, reward_n, total_reward
+                    print(ep_step, reward_n, total_reward)
 
                 if sum(done_n)>0:
                     capture_count += 1
@@ -218,9 +220,9 @@ class Trainer():
             shape = int(np.sqrt(pred_obs[0].shape[0]/(FLAGS.history_len)))
             minimap = np.array(pred_obs).reshape((self._n_predator, FLAGS.history_len,shape,shape))
 
-            print self._env.get_full_encoding()[:,:,0]
-            print minimap[0, -1], act_n[0], reward_n[0]
-            print minimap[1, -1], act_n[1], reward_n[1]
+            print(self._env.get_full_encoding()[:,:,0])
+            print(minimap[0, -1], act_n[0], reward_n[0])
+            print(minimap[1, -1], act_n[1], reward_n[1])
 
-        print "CAPTURE COUNT: ", capture_count
-        print "EPISODE LENGTHS: ", ep_length
+        print("CAPTURE COUNT: ", capture_count)
+        print("EPISODE LENGTHS: ", ep_length)

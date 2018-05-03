@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding=utf8
-
+from __future__ import print_function
+from __future__ import division
 import numpy as np
 import logging
 import config
@@ -30,12 +31,12 @@ class Evaluation(object):
     def summarize(self, key=None):
         if key is None:
             for k in self.m:
-                print "Average", k, float(self.m[k]['value'])/self.m[k]['cnt']
+                print("Average", k, float(self.m[k]['value'])/self.m[k]['cnt'])
                 result.info("summary\t" + k + "\t" + str(float(self.m[k]['value']) / self.m[k]['cnt']))
 
         elif key not in self.m:
-            print "Wrong key"
+            print("Wrong key")
 
         else:
-            print "Average", key, float(self.m[key]['value']) / self.m[key]['cnt']
+            print("Average", key, float(self.m[key]['value']) / self.m[key]['cnt'])
             result.info("summary\t" + key + "\t" + str(float(self.m[key]['value'])/self.m[key]['cnt']))

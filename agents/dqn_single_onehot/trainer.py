@@ -13,7 +13,8 @@
 
 Choose action based on q-learning algorithm
 """
-
+from __future__ import print_function
+from __future__ import division
 import numpy as np
 from agents.dqn_single_onehot.agent import Agent
 from agents.simple_agent import StaticAgent as NonLearningAgent
@@ -80,7 +81,7 @@ class Trainer(object):
 
                 if is_episode_done(done, step):
                     if print_flag:
-                        print "[train_ep %d]" % (episode),"\tstep:", step, "\tep_step:", ep_step, "\treward", total_reward
+                        print("[train_ep %d]" % (episode),"\tstep:", step, "\tep_step:", ep_step, "\treward", total_reward)
                     break
 
             if episode % FLAGS.eval_step == 0:
@@ -155,7 +156,7 @@ class Trainer(object):
                 if is_episode_done(done, step, "test") or ep_step > FLAGS.max_step:
                     break
 
-        print "Test result: Average steps to capture: ", curr_ep, float(step)/episode
+        print("Test result: Average steps to capture: ", curr_ep, float(step)/episode)
         self._eval.update_value("test_result", float(step)/episode, curr_ep)
 
 

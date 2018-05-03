@@ -13,6 +13,8 @@ epsilon = 0.1
 epsilon_min = 0.01
 
 """
+from __future__ import print_function
+from __future__ import division
 import numpy as np
 import tensorflow as tf
 import config
@@ -45,7 +47,7 @@ class ActorNetwork:
         self.state_dim = state_dim
         self.action_dim = action_dim
 
-        print state_dim, action_dim
+        print(state_dim, action_dim)
 
         if nn_id == None:
             scope = 'actor'
@@ -76,7 +78,7 @@ class ActorNetwork:
 
         # actor loss function (mean Q-values under current policy with regularization)
         self.actor_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope)
-        print self.actor_vars
+        print(self.actor_vars)
 
         self.responsible = tf.multiply(self.actions, self.a_onehot)
         

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding=utf8
-
+from __future__ import print_function
+from __future__ import division
 import sys
 import re
 import matplotlib.pyplot as plt
@@ -13,8 +14,8 @@ if __name__ == '__main__':
     window_size = 10000
     for i in range(1, num_file+1):
         filename.append(sys.argv[i])
-        print sys.argv[i]
-    print num_file
+        print(sys.argv[i])
+    print(num_file)
 
     fig = plt.figure()
     for i in range(num_file):
@@ -35,7 +36,7 @@ if __name__ == '__main__':
                     x.append(episode)
                     y.append(result)
                 except:
-                    print line
+                    print(line)
 
         plt.plot(x, y)
 

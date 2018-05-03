@@ -17,7 +17,8 @@ map 3 일때
 
 Choose action based on q-learning algorithm
 """
-
+from __future__ import print_function
+from __future__ import division
 import random
 import numpy as np
 import tensorflow as tf
@@ -94,8 +95,8 @@ class JointPredatorAgentFO(object):
         action_prob = self._actor.action_for_state(obs.reshape(1, self._obs_dim))
 
         if np.isnan(action_prob).any():
-            print "Value Error: nan"
-            print action_prob
+            print("Value Error: nan")
+            print(action_prob)
             sys.exit()
 
         joint_action_index = np.random.choice(len(action_prob[0]), p=action_prob[0])

@@ -17,7 +17,8 @@ map 3 일때
 
 Choose action based on q-learning algorithm
 """
-
+from __future__ import print_function
+from __future__ import division
 import numpy as np
 import tensorflow as tf
 import sys
@@ -76,8 +77,8 @@ class Agent(object):
         qval = self._actor.action_for_state(s[None])
 
         if np.isnan(qval).any():
-            print "Value Error: nan"
-            print qval
+            print("Value Error: nan")
+            print(qval)
             sys.exit()
 
         action_i = np.random.choice(len(qval[0]), p=qval[0])
@@ -194,4 +195,4 @@ class Agent(object):
                         q_value.append(q)
                         q_a += q[0][0][0]
 
-        print self.update_cnt, q_a/len(q_value)
+        print(self.update_cnt, q_a/len(q_value))

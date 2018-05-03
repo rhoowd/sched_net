@@ -14,7 +14,8 @@
 Choose action based on q-learning algorithm
 python main.py --agent cdqn_fo --training_step 50000 --map_size 4 --scenario pursuit --lr 0.0001
 """
-
+from __future__ import print_function
+from __future__ import division
 import numpy as np
 from agents.cfao_sa.agent import Agent
 from agents.simple_agent import RandomAgent as NonLearningAgent
@@ -72,12 +73,12 @@ class Trainer(object):
                 obs_n, reward, done, info = self._env.step(action)
                 state_n = self._env.get_full_encoding()[:, :, 2]
 
-                # print obs_n
+                # print(obs_n)
                 # imap = np.array(obs_n[0]).reshape((3, 3))
-                # print state_n
-                # print np.array(obs_n[0]).reshape((3, 3))
-                # print np.array(obs_n[1]).reshape((3, 3))
-                # print ""
+                # print(state_n)
+                # print(np.array(obs_n[0]).reshape((3, 3)))
+                # print(np.array(obs_n[1]).reshape((3, 3)))
+                # print("")
 
                 done_single = sum(done) > 0
                 self.train_agents(state, obs, action, reward, state_n, obs_n, done_single)
@@ -88,7 +89,7 @@ class Trainer(object):
 
                 if is_episode_done(done, step):
                     if print_flag:
-                        print "[train_ep %d]" % (episode),"\tstep:", step, "\tep_step:", ep_step, "\treward", total_reward
+                        print("[train_ep %d]" % (episode),"\tstep:", step, "\tep_step:", ep_step, "\treward", total_reward)
                     break
 
             if episode % FLAGS.eval_step == 0:
@@ -145,7 +146,7 @@ class Trainer(object):
             obs = self._env.reset()
             state = self._env.get_full_encoding()[:, :, 2]
             if test_flag:
-                print "\nInit\n", state
+                print("\nInit\n", state)
             total_reward = 0
 
             ep_step = 0
@@ -163,8 +164,8 @@ class Trainer(object):
                     aa = raw_input('>')
                     if aa == 'c':
                         test_flag = False
-                    print action
-                    print state_n
+                    print(action)
+                    print(state_n)
 
                 obs = obs_n
                 state = state_n
@@ -173,7 +174,7 @@ class Trainer(object):
                 if is_episode_done(done, step, "test") or ep_step > FLAGS.max_step:
                     break
 
-        print "Test result: Average steps to capture: ", curr_ep, float(step)/episode
+        print("Test result: Average steps to capture: ", curr_ep, float(step)/episode)
         self._eval.update_value("test_result", float(step)/episode, curr_ep)
 
 

@@ -17,6 +17,7 @@ python main.py --agent cdqn_fo --training_step 50000 --map_size 4 --scenario pur
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+import six
 import numpy as np
 from agents.cdqn_fo.agent import Agent
 from agents.simple_agent import RandomAgent as NonLearningAgent
@@ -155,7 +156,7 @@ class Trainer(object):
                 state_n = self._env.get_full_encoding()[:, :, 2]
 
                 if test_flag:
-                    aa = raw_input('>')
+                    aa = six.moves.input('>')
                     if aa == 'c':
                         test_flag = False
                     print(action)

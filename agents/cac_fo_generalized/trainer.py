@@ -19,7 +19,7 @@ epsilon_min = 0.1
 class Trainer(object):
 
     def __init__(self, env):
-        logger.info("Centralized DQN Trainer is created")
+        logger.info("Centralized Actor-Critic Trainer is created")
 
         self._env = env
         self._eval = Evaluation()
@@ -27,10 +27,10 @@ class Trainer(object):
         self._state_dim = self._env.get_global_state().shape[0]
 
         # joint CAC predator agent
-        self._predator_agent = JointPredatorAgentFO(self._agent_profile['predator']['n_agent'],
-                                                    self._agent_profile['predator']['act_dim'],
-                                                    self._state_dim)
-        # randomly moving prey agent TODO fix later..
+        self._predator_agent = JointPredatorAgentFO(n_agent=self._agent_profile['predator']['n_agent'],
+                                                    action_dim=self._agent_profile['predator']['act_dim'],
+                                                    obs_dim=self._state_dim)
+        # randomly moving prey agent
         self._prey_agent = []
         for _ in range(self._agent_profile['prey']['n_agent']):
             self._prey_agent.append(RandomAgent(5))
@@ -45,39 +45,39 @@ class Trainer(object):
 
         while global_step < training_step:
             episode_num += 1
-            step_per_ep = 0
-            obs_n = self._env.reset()
+            step_in_ep = 0
+            _ = self._env.reset() # obs_n
             state = self._env.get_global_state()
             total_reward = 0
 
             while True:
                 global_step += 1
-                step_per_ep += 1
+                step_in_ep += 1
 
                 # action_n = self.get_action(obs_n, global_step)
                 action_n = self.get_action(state, global_step)
 
-                obs_n_next, reward_n, done_n, _ = self._env.step(action_n)
+                _, reward_n, done_n, _ = self._env.step(action_n) # obs_n_next
                 state_next = self._env.get_global_state()
 
                 done_single = sum(done_n) > 0
                 # self.train_agents(obs_n, action_n, reward_n, obs_n_next, done_single)
                 self.train_agents(state, action_n, reward_n, state_next, done_single)
 
-                obs_n = obs_n_next
+                # obs_n = obs_n_next
                 state = state_next
-                # for i, cell in enumerate(obs_n[0].reshape(16, 5)):
+                # for i, cell in enumerate(state.reshape(16, 5)):
                 #     if max(cell) == 0:
                 #         print '-',
                 #     else:
                 #         print np.argmax(cell),
-                #     if i % 4 == 2:
+                #     if i % 4 == 4 - 1:
                 #         print
                 total_reward += np.sum(reward_n)
 
                 if is_episode_done(done_n, global_step):
                     if print_flag:
-                        print "[train_ep %d]" % (episode_num),"\tstep:", global_step, "\tstep_per_ep:", step_per_ep, "\treward", total_reward
+                        print "[train_ep %d]" % (episode_num),"\tstep:", global_step, "\tstep_per_ep:", step_in_ep, "\treward", total_reward
                     break
 
             if episode_num % FLAGS.eval_step == 0:
@@ -127,10 +127,9 @@ class Trainer(object):
 
         while global_step < testing_step:
             episode_num += 1
-            step_per_ep = 0
+            step_in_ep = 0
             obs_n = self._env.reset()
             state = self._env.get_global_state()
-            # state = self._env.get_full_encoding()[:, :, 2]
             if test_flag:
                 print "\nInit\n", obs_n[0]
             total_reward = 0
@@ -138,13 +137,12 @@ class Trainer(object):
             while True:
 
                 global_step += 1
-                step_per_ep += 1
+                step_in_ep += 1
 
                 action_n = self.get_action(state, global_step, False)
                 obs_n_next, reward_n, done_n, _ = self._env.step(action_n)
                 state_next = self._env.get_global_state()
-                # state_n = self._env.get_full_encoding()[:, :, 2]
-
+                
                 if test_flag:
                     aa = raw_input('>')
                     if aa == 'c':
@@ -156,7 +154,7 @@ class Trainer(object):
                 state = state_next
                 total_reward += np.sum(reward_n)
 
-                if is_episode_done(done_n, global_step, "test") or step_per_ep > FLAGS.max_step:
+                if is_episode_done(done_n, global_step, "test") or step_in_ep > FLAGS.max_step:
                     break
 
         print "Test result: Average steps to capture: ", curr_ep, float(global_step)/episode_num

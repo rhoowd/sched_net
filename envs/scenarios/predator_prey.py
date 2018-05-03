@@ -25,6 +25,7 @@ class Predator(CoreAgent):
     def __init__(self, fully_observable=False):
         super(Predator, self).__init__('predator', 'blue')
         self.fully_observable = fully_observable
+        self.obs_range = 1
 
 class Scenario(BaseScenario):
     def __init__(self):

@@ -19,6 +19,7 @@ tau = 5e-2  # soft target update rate
 """
 from __future__ import print_function
 from __future__ import division
+from __future__ import absolute_import
 import numpy as np
 import tensorflow as tf
 import sys
@@ -193,7 +194,7 @@ class ConcatPredatorAgentCFAO(object):
         return n_hot
 
     def index_to_action(self, index):
-        return index % 5, index / 5
+        return index % 5, index // 5
 
     def action_to_index(self, a1, a2):
         return a1 + a2 * 5

@@ -194,7 +194,7 @@ class Agent(object):
         return n_hot
 
     def index_to_action(self, index):
-        return index % 5, index / 5
+        return index % 5, index // 5
 
     def action_to_index(self, a1, a2):
         return a1 + a2 * 5

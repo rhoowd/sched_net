@@ -20,6 +20,7 @@ tau = 5e-2  # soft target update rate
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+import random
 import numpy as np
 import tensorflow as tf
 import sys
@@ -42,16 +43,16 @@ class ConcatPredatorAgentCFAO(object):
     def __init__(self, n_agent, action_dim, state_dim, obs_dim, name=""):
         logger.info("Critic with Full state, Actor with limited obs, Separate Action")
 
-        self._n_predator = FLAGS.n_predator
-        self._n_prey = FLAGS.n_prey
-        self.map_size = FLAGS.map_size
+        self._n_agent = n_agent
+        self._state_dim = state_dim
+        self._action_dim_per_unit = action_dim
+        self._obs_dim_per_unit = obs_dim
 
-        self._obs_dim = obs_dim
-        self._action_dim_single = action_dim
-        self._action_dim = action_dim ** self._n_predator
-        self._state_dim = (self.map_size**2) * (self._n_predator + self._n_prey)
-        self._state_dim_single = (self.map_size**2)
-
+        # concatenated action space
+        self._action_dim = self._action_dim_per_unit * self._n_agent
+        # concatenated observation space
+        self._obs_dim = self._obs_dim_per_unit * self._n_agent
+        
         self._name = name
         self.update_cnt = 0
 
@@ -59,11 +60,9 @@ class ConcatPredatorAgentCFAO(object):
         tf.reset_default_graph()
         my_graph = tf.Graph()
 
-        self.input_dim = 3*self._obs_dim*self._n_predator
-
         with my_graph.as_default():
             self.sess = tf.Session(graph=my_graph, config=tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=True)))
-            self._actor = ActorNetwork(self.sess, self.input_dim, action_dim * self._n_predator, 'sa')
+            self._actor = ActorNetwork(self.sess, self._obs_dim, self._action_dim, 'sa')
             self._critic = CriticNetwork(self.sess, self._state_dim, self._action_dim, self._name)
 
             self.sess.run(tf.global_variables_initializer())
@@ -73,24 +72,25 @@ class ConcatPredatorAgentCFAO(object):
         self._eval = Evaluation()
         self.q_prev = None
 
-    def act(self, state, obs):
+    def explore(self):
+        return [random.randrange(self._action_dim_per_unit)
+                for _ in range(self._n_agent)]
 
-        obs_i = self.obs_to_onehot(obs)
-        o = np.reshape(obs_i, self.input_dim)
+    def act(self, obs_list):
 
-        q = self._actor.action_for_state(o[None])
+        # TODO just argmax when testing..
 
-        if np.isnan(q).any():
-            print("Value Error: nan")
-            print(q)
-            sys.exit()
+        action_prob_list = self._actor.action_for_state(np.concatenate(obs_list)
+                                                          .reshape(1, self._obs_dim))
+        if np.isnan(action_prob_list).any():
+            raise ValueError('action_prob contains NaN')
+        action_list = []
+        for action_prob in action_prob_list.reshape(self._n_agent, self._action_dim_per_unit):
+            action_list.append(np.random.choice(len(action_prob), p=action_prob))
 
-        a1 = np.random.choice(self._action_dim_single, p=q[0][0:5])
-        a2 = np.random.choice(self._action_dim_single, p=q[0][5:10])
+        return action_list
 
-        return a1, a2
-
-    def train(self, state, obs, action, reward, state_n, obs_n, done):
+    def train(self, state, obs_list, action_list, reward_list, state_next, obs_next_list, done):
 
         a = self.action_to_index(action[0], action[1])
         a_h = self.action_to_nhot(a, 10)

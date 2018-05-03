@@ -96,8 +96,27 @@ class Scenario(BaseScenario):
         return 0
 
     def observation(self, agent, world):
-        obs = np.array(agent.get_obs()).flatten()
-        return obs
+        obs_native = np.array(agent.get_obs())
+        # encode all predators and preys into same id
+        indistinguish = True
+        if indistinguish:
+            obs = np.array([])
+            for cell in obs_native.reshape(-1, len(world.agents) + 1):
+                # one-hot encoded cell w.r.t. agent id
+                compact_cell = np.zeros(3) # wall, predator, prey
+                if np.max(cell) != 0:
+                    idx = np.argmax(cell)
+                    if idx == 0: # wall
+                        compact_cell[0] = 1.0
+                    elif idx in self.atype_to_idx['predator']:
+                        compact_cell[1] = 1.0
+                    elif idx in self.atype_to_idx['prey']:
+                        compact_cell[2] = 1.0
+                    else:
+                        raise Exception('cell has to be wall/predator/prey!')
+            return obs
+        else:
+            return obs_native
 
     def done(self, agent, world):
         return self.prey_captured

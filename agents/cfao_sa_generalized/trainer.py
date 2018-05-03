@@ -90,7 +90,8 @@ class Trainer(object):
         if train and (global_step < FLAGS.m_size * FLAGS.pre_train_step or np.random.rand() < self.epsilon):  # with prob. epsilon
             predator_action = self._predator_agent.explore()
         else:
-            predator_action = self._predator_agent.act(obs_n)
+            predator_obs = [obs_n[i] for i in self._agent_profile['predator']['idx']]
+            predator_action = self._predator_agent.act(predator_obs)
 
         for i, idx in enumerate(self._agent_profile['predator']['idx']):
             act_n[idx] = predator_action[i]
@@ -120,7 +121,7 @@ class Trainer(object):
         while global_step < testing_step:
             episode_num += 1
             obs_n = self._env.reset()
-            state = self._env.get_full_encoding()[:, :, 2]
+            state = self._env.get_global_state()
             if test_flag:
                 print("\nInit\n", state)
             total_reward = 0
@@ -132,9 +133,9 @@ class Trainer(object):
                 global_step += 1
                 step_in_ep += 1
 
-                action_n = self.get_action(obs_n, global_step, state, False)
-                obs_n_next, reward, done, _ = self._env.step(action_n)
-                state_next = self._env.get_full_encoding()[:, :, 2]
+                action_n = self.get_action(state, obs_n, global_step, False)
+                obs_n_next, reward, done_n, _ = self._env.step(action_n)
+                state_next = self._env.get_global_state()
 
                 if test_flag:
                     aa = six.moves.input('>')
@@ -147,7 +148,7 @@ class Trainer(object):
                 state = state_next
                 total_reward += np.sum(reward)
 
-                if is_episode_done(done, global_step, "test") or step_in_ep > FLAGS.max_step:
+                if is_episode_done(done_n, global_step, "test") or step_in_ep > FLAGS.max_step:
                     break
 
         print("Test result: Average steps to capture: ", curr_ep, float(global_step)/episode_num)

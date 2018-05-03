@@ -1,5 +1,6 @@
 from __future__ import print_function
 from __future__ import division
+from __future__ import absolute_import
 import numpy as np
 from agents.cac_fo_generalized.agent import JointPredatorAgentFO
 from agents.simple_agent import RandomAgent

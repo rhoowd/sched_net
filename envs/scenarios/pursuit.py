@@ -1,5 +1,6 @@
 from __future__ import print_function
 from __future__ import division
+from __future__ import absolute_import
 import numpy as np
 from collections import deque
 from envs.grid_core import World

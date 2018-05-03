@@ -19,11 +19,12 @@ Choose action based on q-learning algorithm
 """
 from __future__ import print_function
 from __future__ import division
+from __future__ import absolute_import
 import random
 import numpy as np
 import tensorflow as tf
 import sys
-from replay_buffer import ReplayBuffer
+from agents.cac_fo_generalized.replay_buffer import ReplayBuffer
 from agents.cac_fo_generalized.ac_network import ActorNetwork
 from agents.cac_fo_generalized.ac_network import CriticNetwork
 from agents.evaluation import Evaluation
@@ -84,8 +85,10 @@ class JointPredatorAgentFO(object):
 
     def compose_joint_action(self, action_list):
         # compose action list into joint action
-        return reduce(lambda x, y: x * self._action_dim_per_unit + y,
-                      reversed(action_list))
+        r = 0
+        for a in action_list:
+            r = a + r * self._action_dim_per_unit
+        return r
 
     def act(self, obs):
 

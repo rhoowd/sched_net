@@ -16,6 +16,7 @@ python main.py --agent cdqn_fo --training_step 50000 --map_size 4 --scenario pur
 """
 from __future__ import print_function
 from __future__ import division
+from __future__ import absolute_import
 import numpy as np
 from agents.cac_fo.agent import Agent
 from agents.simple_agent import RandomAgent as NonLearningAgent

@@ -1,5 +1,6 @@
 from __future__ import print_function
 from __future__ import division
+from __future__ import absolute_import
 from agents.replay_buffer import ReplayBuffer
 from agents.ind_ac.agent import Agent
 from agents.simple_agent import StaticAgent as NonLearningAgent

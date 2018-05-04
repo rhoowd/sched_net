@@ -43,7 +43,8 @@ np.set_printoptions(threshold=np.nan)
 
 
 class ActorNetwork:
-    def __init__(self, sess, state_dim, action_dim, nn_id=None):
+
+    def __init__(self, sess, n_agent, state_dim, action_dim, nn_id=None):
 
         self.sess = sess
         self.state_dim = state_dim
@@ -57,8 +58,11 @@ class ActorNetwork:
         # placeholders
         self.state_ph = tf.placeholder(dtype=tf.float32, shape=[None, state_dim])
         self.next_state_ph = tf.placeholder(dtype=tf.float32, shape=[None, state_dim])
-        self.action_ph = tf.placeholder(dtype=tf.float32, shape=[None, self.action_dim])
-        # self.a_onehot = tf.one_hot(self.action_ph, self.action_dim, 1.0, 0.0)
+        self.action_ph = [tf.placeholder(dtype=tf.float32, shape=[None])
+                          for _ in range(n_agent)]
+        self.action_ph = tf.placeholder(dtype=tf.float32, shape=[None])
+        # TODO concat action space
+        self.a_onehot = tf.one_hot(self.action_ph, self.action_dim, 1.0, 0.0)
         self.td_errors = tf.placeholder(dtype=tf.float32, shape=[None, 1])
 
         # indicators (go into target computation)
@@ -157,6 +161,7 @@ class ActorNetwork:
 
 
 class CriticNetwork:
+
     def __init__(self, sess, state_dim, action_dim, nn_id=None):
 
         self.sess = sess

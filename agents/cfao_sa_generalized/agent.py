@@ -48,8 +48,10 @@ class ConcatPredatorAgentCFAO(object):
         self._action_dim_per_unit = action_dim
         self._obs_dim_per_unit = obs_dim
 
-        # concatenated action space
-        self._action_dim = self._action_dim_per_unit * self._n_agent
+        # concatenated action space for actor network
+        # self._concat_action_dim = self._action_dim_per_unit * self._n_agent
+        # joint action space for critic network
+        self._joint_action_dim = self._action_dim_per_unit ** self._n_agent
         # concatenated observation space
         self._obs_dim = self._obs_dim_per_unit * self._n_agent
         
@@ -62,8 +64,8 @@ class ConcatPredatorAgentCFAO(object):
 
         with my_graph.as_default():
             self.sess = tf.Session(graph=my_graph, config=tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=True)))
-            self._actor = ActorNetwork(self.sess, self._obs_dim, self._action_dim, 'sa')
-            self._critic = CriticNetwork(self.sess, self._state_dim, self._action_dim, self._name)
+            self._actor = ActorNetwork(self.sess, self._n_agent, self._obs_dim, self._action_dim_per_unit, 'sa')
+            self._critic = CriticNetwork(self.sess, self._state_dim, self._joint_action_dim, self._name)
 
             self.sess.run(tf.global_variables_initializer())
 
@@ -75,6 +77,21 @@ class ConcatPredatorAgentCFAO(object):
     def explore(self):
         return [random.randrange(self._action_dim_per_unit)
                 for _ in range(self._n_agent)]
+
+    def decompose_joint_action(self, joint_action_index):
+        # decompose joint action index into list of actions of each agent
+        action_list = []
+        for _ in range(self._n_agent):
+            action_list.append(joint_action_index % self._action_dim_per_unit)
+            joint_action_index //= self._action_dim_per_unit
+        return action_list
+
+    def compose_joint_action(self, action_list):
+        # compose action list into joint action
+        r = 0
+        for a in action_list:
+            r = a + r * self._action_dim_per_unit
+        return r
 
     def act(self, obs_list):
 
@@ -92,41 +109,34 @@ class ConcatPredatorAgentCFAO(object):
 
     def train(self, state, obs_list, action_list, reward_list, state_next, obs_next_list, done):
 
-        a = self.action_to_index(action[0], action[1])
-        a_h = self.action_to_nhot(a, 10)
-        s = self.state_to_index(state)
-        s_n = self.state_to_index(state_n)
-        r = np.sum(reward)
-        o = self.obs_to_onehot(obs)
+        s = state
+        o = obs_list
+        a = action_list
+        r = np.sum(reward_list)
+        s_ = state_next
+        o_ = obs_next_list
 
-        self.store_sample(s, a, r, s_n, done, o, a_h)
+        self.store_sample(s, o, a, r, s_, o_, done)
         self.update_ac()
 
         return 0
 
-    def store_sample(self, s, a, r, s_n, done, o, a_h):
+    def store_sample(self, s, o, a, r, s_, o_, done):
 
-        self.replay_buffer.add_to_memory((s, a, r, s_n, done, o, a_h))
+        self.replay_buffer.add_to_memory((s, o, a, r, s_, o_, done))
         return 0
 
     def update_ac(self):
-        if FLAGS.qtrace:
-            self.update_cnt += 1
-            if self.update_cnt % 1000 == 0:
-                self.q()
+        # if FLAGS.qtrace:
+        #     self.update_cnt += 1
+        #     if self.update_cnt % 1000 == 0:
+        #         self.q()
 
         if len(self.replay_buffer.replay_memory) < 10 * FLAGS.m_size:
             return 0
 
         minibatch = self.replay_buffer.sample_from_memory()
-
-        s = np.asarray([elem[0] for elem in minibatch])
-        a = np.asarray([elem[1] for elem in minibatch])
-        r = np.asarray([elem[2] for elem in minibatch])
-        s_ = np.asarray([elem[3] for elem in minibatch])
-        d = np.asarray([elem[4] for elem in minibatch])
-        o = np.asarray([elem[5] for elem in minibatch])
-        a_h = np.asarray([elem[6] for elem in minibatch])
+        s, o, a, r, s_, o_, d = map(np.array, zip(*minibatch))
 
         td_error, _ = self._critic.training_critic(s, a, r, s_, a, d)  # train critic
         _ = self._actor.training_actor(o, a_h, td_error)  # train actor

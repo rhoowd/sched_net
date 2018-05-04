@@ -55,7 +55,7 @@ class Trainer(object):
             total_reward = 0
 
             if print_flag:
-                print("[train_ep %d]" % (episode),)
+                print("[train_ep %d]" % (episode), end=' ')
             ep_step = 0
 
             while True:
@@ -128,7 +128,7 @@ class Trainer(object):
 
             total_reward = 0
 
-            print("[test_ep  %d]" % (episode),)
+            print("[test_ep  %d]" % (episode), end=' ')
             ep_step = 0
 
             while True:

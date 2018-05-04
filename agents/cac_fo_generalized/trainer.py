@@ -70,13 +70,14 @@ class Trainer(object):
 
                 # obs_n = obs_n_next
                 state = state_next
-                # for i, cell in enumerate(state.reshape(16, 5)):
+                # for i, cell in enumerate(state.reshape(FLAGS.map_size**2, 1 + FLAGS.n_predator + FLAGS.n_prey)):
                 #     if max(cell) == 0:
-                #         print('-',)
+                #         print('-', end=' ')
                 #     else:
-                #         print(np.argmax(cell),)
-                #     if i % 4 == 4 - 1:
-                #         print
+                #         print(np.argmax(cell), end=' ')
+                #     if i % FLAGS.map_size == FLAGS.map_size - 1:
+                #         print()
+                # print()
                 total_reward += np.sum(reward_n)
 
                 if is_episode_done(done_n, global_step):

@@ -36,10 +36,12 @@ h2_scheduler = h_num  # hidden layer 2 size for the critic
 h3_scheduler = h_num  # hidden layer 3 size for the critic
 
 
-lr_actor = 1e-5  # learning rate for the actor
-lr_critic = 1e-4  # learning rate for the critic
+lr_critic = FLAGS.c_lr  # learning rate for the critic
+lr_actor = FLAGS.a_lr  # learning rate for the actor
+lr_schedule = FLAGS.s_lr  # learning rate for the critic
+
 lr_decay = 1  # learning rate decay (per episode)
-tau = 5e-2  # soft target update rate
+tau = FLAGS.s_lr   # soft target update rate
 
 np.set_printoptions(threshold=np.nan)
 
@@ -57,11 +59,11 @@ class ActorNetwork:
 
         # placeholders
         self.state_ph = tf.placeholder(dtype=tf.float32, shape=[None, state_dim])
-        self.next_state_ph = tf.placeholder(dtype=tf.float32, shape=[None, state_dim])
+        # self.next_state_ph = tf.placeholder(dtype=tf.float32, shape=[None, state_dim])
         self.action_ph = tf.placeholder(dtype=tf.float32, shape=[None, self.action_dim])
         self.td_errors = tf.placeholder(dtype=tf.float32, shape=[None, 1])
         self.schedule = tf.placeholder(tf.bool, name='check')
-        self.conn_i = [[True, True, True], [True, True, True], [True, True, True]]
+
         # indicators (go into target computation)
         self.is_training_ph = tf.placeholder(dtype=tf.bool, shape=())  # for dropout
 
@@ -69,13 +71,6 @@ class ActorNetwork:
         with tf.variable_scope(scope):
             # Policy's outputted action for each state_ph (for generating actions and training the critic)
             self.actions = self.generate_actor_network(self.state_ph, self.schedule, trainable=True)
-
-        # slow target actor network
-        # with tf.variable_scope('slow_target_' + scope):
-        #     # Slow target policy's outputted action for each next_state_ph (for training the critic)
-        #     # use stop_gradient to treat the output values as constant targets when doing backprop
-        #     self.slow_target_next_actions = tf.stop_gradient(
-        #         self.generate_actor_network(self.next_state_ph, self.conn, trainable=False))
 
         # actor loss function (mean Q-values under current policy with regularization)
         self.actor_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope)
@@ -106,26 +101,25 @@ class ActorNetwork:
 
         return srnet_a.generate_srnet(s, conn, trainable)
 
-    def action_for_state(self, state_ph):
+    def action_for_state(self, state_ph, schedule):
 
-        return self.sess.run(self.actions,
-                             feed_dict={self.state_ph: state_ph, self.is_training_ph: False, self.schedule: self.conn_i})
+        return self.sess.run(self.actions, feed_dict={self.state_ph: state_ph,
+                                                      self.is_training_ph: False,
+                                                      self.schedule: schedule})
 
-    # def target_action_for_next_state(self, next_state_ph):
-    #     return self.sess.run(self.slow_target_next_actions,
-    #                          feed_dict={self.next_state_ph: next_state_ph, self.is_training_ph: False})
+    def training_actor(self, state_ph, action_ph, td_errors, schedule):
 
-    def training_actor(self, state_ph, action_ph, td_errors):
         return self.sess.run(self.actor_train_op,
                              feed_dict={self.state_ph: state_ph,
                                         self.action_ph: action_ph,
                                         self.td_errors: td_errors,
                                         self.is_training_ph: True,
-                                        self.schedule: self.conn_i})
+                                        self.schedule: schedule})
 
-    def training_target_actor(self):
-        return self.sess.run(self.update_slow_targets_op_a,
-                             feed_dict={self.is_training_ph: False, self.schedule: self.conn_i})
+    # def training_target_actor(self):
+    #     return self.sess.run(self.update_slow_targets_op_a,
+    #                          feed_dict={self.is_training_ph: False,
+    #                                     self.schedule: self.conn_i})
 
 
 class CriticNetwork:
@@ -143,7 +137,7 @@ class CriticNetwork:
         self.state_ph = tf.placeholder(dtype=tf.float32, shape=[None, state_dim])
         self.action_ph = tf.placeholder(dtype=tf.int32, shape=[None])
         self.a_onehot = tf.one_hot(self.action_ph, action_dim, 1.0, 0.0)
- 
+
         self.reward_ph = tf.placeholder(dtype=tf.float32, shape=[None])
 
         self.next_state_ph = tf.placeholder(dtype=tf.float32, shape=[None, state_dim])
@@ -255,13 +249,13 @@ class SchedulerNetwork:
 
         # actor loss function (mean Q-values under current policy with regularization)
         self.actor_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='schedule')
-        self.responsible = tf.multiply(self.schedule_policy, self.schedule_ph)  # =\pi (policy)
+        self.responsible = tf.multiply(self.schedule_policy[0], self.schedule_ph)  # =\pi (policy)
         log_prob = tf.log(tf.reduce_sum(self.responsible, reduction_indices=1, keep_dims=True))
-        entropy = -tf.reduce_sum(self.schedule_policy * tf.log(self.schedule_policy), 1)
-
+        entropy = -tf.reduce_sum(self.schedule_policy[0] * tf.log(self.schedule_policy[0]), 1)
         self.loss = tf.reduce_sum(-(tf.multiply(log_prob, self.td_errors) + 0.01 * entropy))
 
         var_grads = tf.gradients(self.loss, self.actor_vars)
+        self.grad = var_grads
         self.scheduler_train_op = tf.train.AdamOptimizer(lr_actor * lr_decay).apply_gradients(
             zip(var_grads, self.actor_vars))
 
@@ -307,6 +301,7 @@ class SchedulerNetwork:
                              feed_dict={self.obs_ph: obs_ph, self.is_training_ph: False})[0]
 
     def training_scheduler(self, obs_ph, schedule_ph, td_errors):
+
         return self.sess.run(self.scheduler_train_op,
                              feed_dict={self.obs_ph: obs_ph,
                                         self.schedule_ph: schedule_ph,

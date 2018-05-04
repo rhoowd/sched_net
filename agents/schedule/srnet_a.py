@@ -14,7 +14,7 @@ h_r_1 = h_r_2 = h_r_3 = 64
 h_a_1 = h_a_2 = h_a_3 = 64
 
 
-def generate_srnet(obs, conn, trainable=True):
+def generate_srnet(obs, schedule, trainable=True):
 
     obs_list = list()
     sender_list = list()
@@ -33,7 +33,7 @@ def generate_srnet(obs, conn, trainable=True):
     # Receiver
     for i in range(num_agent):
         with tf.variable_scope("recv"+str(i)):
-            recv = generate_receiver(i, sender_list, conn)
+            recv = generate_receiver(i, sender_list, schedule)
             recv_list.append(recv)
 
     # Actor
@@ -45,24 +45,24 @@ def generate_srnet(obs, conn, trainable=True):
     return actions
 
 
-def generate_receiver(a_id, sender_list, conn):
+def generate_receiver(a_id, sender_list, schedule):
     """
     Make receiver network.
     This should be flexible to the varying number of agent within comm. range
 
     :param a_id: agent ID
     :param sender_list: receiving message
-    :param conn: connectivity matrix (format: conn[recv][sender])
+    :param schedule: schedule matrix (format: schedule[scheduled_sender] = True)
     :return:
     """
 
-    recv = tf.zeros([1, recv_mid_dim], dtype=tf.float32, name=None)
+    recv = tf.zeros([tf.shape(sender_list)[1], recv_mid_dim], dtype=tf.float32, name=None)
 
     for i, msg in enumerate(sender_list):
         if i == a_id:
             continue
         r_filter = generate_recv_filter(msg)
-        recv = tf.cond(conn[a_id][i], lambda: tf.add(r_filter, recv), lambda: recv)  # kdw
+        recv = tf.cond(schedule[i], lambda: tf.add(r_filter, recv), lambda: recv)  # kdw
 
     return recv
 
@@ -155,10 +155,11 @@ def generate_actor_softmax(obs, r):
 
 
 if __name__ == '__main__':
-    obs = tf.placeholder(dtype=tf.float32, shape=[None, obs_dim * num_agent])
-    conn = tf.placeholder(tf.bool, name='check')
 
-    srnet = generate_srnet(obs, conn)
+    obs = tf.placeholder(dtype=tf.float32, shape=[None, obs_dim * num_agent])
+    schedule = tf.placeholder(tf.bool, name='check')
+
+    srnet = generate_srnet(obs, schedule)
 
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
@@ -166,25 +167,27 @@ if __name__ == '__main__':
     # conn[recv][sender]
     conn_i = [[True, True, True], [True, True, True], [True, True, True]]
     conn_i = [[False, True, False], [False, True, False], [False, True, False]]
-    a, m, r = sess.run(srnet, feed_dict={obs: [[1, 2, 3, 4, 5, 6, 7, 8, 9]], conn: conn_i})
-
+    conn_i = [True, False, True]
+    a = sess.run(srnet, feed_dict={obs: [
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1,
+         2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9], [1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1,
+         2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9]], schedule: conn_i})
     print "Actions:", a
-    print "Message:", m
-    print "Recv.  :", r
 
-    exit()
+    y = tf.placeholder(dtype=tf.float32, shape=[None, 10])
 
-    y = tf.placeholder(dtype=tf.float32, shape=[None, 3])
-
-    cost = tf.reduce_sum(tf.square(y - srnet[0]))
+    cost = tf.reduce_sum(tf.square(y - srnet))
     train = tf.train.GradientDescentOptimizer(learning_rate=0.01).minimize(cost)
 
     for i in range(100):
-        sess.run(train, feed_dict={obs: [[1, 2, 3, 4, 5, 6, 7, 8, 9]], conn: conn_i, y: [[0.5, 0.5, 0.5]]})
+        sess.run(train, feed_dict={obs: [
+            [1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+             1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9]], schedule: conn_i,
+                                   y: [[0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2]]})
 
     conn_i = [[False, True, False], [False, False, False], [False, True, False]]
-    a, m, r = sess.run(srnet, feed_dict={obs: [[1, 2, 3, 4, 5, 6, 7, 8, 9]], conn: conn_i})
-
+    conn_i = [False, False, False]
+    a = sess.run(srnet, feed_dict={obs: [
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1,
+         2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9]], schedule: conn_i})
     print "Actions:", a
-    print "Message:", m
-    print "Recv.  :", r

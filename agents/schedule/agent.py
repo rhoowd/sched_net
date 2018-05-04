@@ -32,7 +32,7 @@ result = logging.getLogger('Result')
 class Agent(object):
 
     def __init__(self, action_dim, obs_dim, name=""):
-        logger.info("SRNET")
+        logger.info("Schedule")
 
         self._n_predator = FLAGS.n_predator
         self._n_prey = FLAGS.n_prey
@@ -67,12 +67,11 @@ class Agent(object):
         self._eval = Evaluation()
         self.q_prev = None
 
-    def act(self, state, obs):
+    def act(self, state, obs, schedule):
 
         obs_i = self.obs_to_onehot(obs)
         o = np.reshape(obs_i, self.input_dim)
-
-        q = self._actor.action_for_state(o[None])
+        q = self._actor.action_for_state(o[None], schedule)
 
         if np.isnan(q).any():
             print "Value Error: nan"
@@ -93,7 +92,7 @@ class Agent(object):
         ret[s_i] = True
         return ret
 
-    def train(self, state, obs, action, reward, state_n, obs_n, done):
+    def train(self, state, obs, action, reward, state_n, obs_n, done, schedule):
 
         a = self.action_to_index(action[0], action[1])
         a_h = self.action_to_nhot(a, 10)
@@ -101,21 +100,23 @@ class Agent(object):
         s_n = self.state_to_index(state_n)
         r = np.sum(reward)
         o = self.obs_to_onehot(obs)
+        c = schedule
+        c_i = self.schedule_to_onehot(schedule)
 
-        self.store_sample(s, a, r, s_n, done, o, a_h)
+        self.store_sample(s, a, r, s_n, done, o, a_h, c, c_i)
         self.update_ac()
 
         return 0
 
-    def store_sample(self, s, a, r, s_n, done, o, a_h):
+    def store_sample(self, s, a, r, s_n, done, o, a_h, c, c_i):
 
-        self.replay_buffer.add_to_memory((s, a, r, s_n, done, o, a_h))
+        self.replay_buffer.add_to_memory((s, a, r, s_n, done, o, a_h, c, c_i))
         return 0
 
     def update_ac(self):
         if FLAGS.qtrace:
             self.update_cnt += 1
-            if self.update_cnt % 1000 == 0:
+            if self.update_cnt % 2500 == 0:
                 self.q()
 
         if len(self.replay_buffer.replay_memory) < 10 * FLAGS.m_size:
@@ -130,13 +131,41 @@ class Agent(object):
         d = np.asarray([elem[4] for elem in minibatch])
         o = np.asarray([elem[5] for elem in minibatch])
         a_h = np.asarray([elem[6] for elem in minibatch])
+        c = np.asarray([elem[7] for elem in minibatch])
+        c_i = np.asarray([elem[8] for elem in minibatch])
 
-        td_error, _ = self._critic.training_critic(s, a, r, s_, a, d)  # train critic
-        _ = self._actor.training_actor(o, a_h, td_error)  # train actor
+        if FLAGS.schedule == 'connect' or FLAGS.schedule == 'disconnect':
 
-        _ = self._critic.training_target_critic()  # train slow target critic
+            td_error, _ = self._critic.training_critic(s, a, r, s_, a, d)  # train critic
+            _ = self._actor.training_actor(o, a_h, td_error, c[0])  # train actor
+
+            _ = self._critic.training_target_critic()  # train slow target critic
+
+        elif FLAGS.schedule == 'random':
+            td_error, _ = self._critic.training_critic(s, a, r, s_, a, d)  # train critic
+            for i in range(len(td_error)):
+                _ = self._actor.training_actor(o[i][None], a_h[i][None], td_error[i][None], c[i])  # train actor
+
+            _ = self._critic.training_target_critic()  # train slow target critic
+
+        elif FLAGS.schedule == 'schedule':
+            td_error, _ = self._critic.training_critic(s, a, r, s_, a, d)  # train critic
+            for i in range(len(td_error)):
+                _ = self._actor.training_actor(o[i][None], a_h[i][None], td_error[i][None], c[i])  # train actor
+
+            _ = self._scheduler.training_scheduler(o, c_i, td_error)
+            _ = self._critic.training_target_critic()  # train slow target critic
 
         return 0
+
+    def schedule_to_onehot(self, schedule):
+
+        ret = np.zeros(self._n_predator)
+        for i in range(self._n_predator):
+            if schedule[i]:
+                ret[i] = 1.0
+
+        return ret
 
     def obs_to_onehot(self, obs):
         ret = list()

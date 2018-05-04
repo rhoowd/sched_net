@@ -36,7 +36,7 @@ epsilon_min = 0.1
 class Trainer(object):
 
     def __init__(self, env):
-        logger.info("Centralized DQN Trainer is created")
+        logger.info("Schedule Trainer is created")
 
         self._env = env
         self._eval = Evaluation()
@@ -54,7 +54,7 @@ class Trainer(object):
 
         step = 0
         episode = 0
-        print_flag = True
+        print_flag = False
 
         while step < training_step:
             episode += 1
@@ -67,15 +67,15 @@ class Trainer(object):
                 step += 1
                 ep_step += 1
 
-                schedule = self.get_schedule(obs, step)
+                schedule = self.get_schedule(obs, step, FLAGS.schedule)
 
-                action = self.get_action(obs, step, state)
-                print schedule, action
+                action = self.get_action(obs, step, state, schedule)
+
                 obs_n, reward, done, info = self._env.step(action)
                 state_n = self._env.get_full_encoding()[:, :, 2]
 
                 done_single = sum(done) > 0
-                self.train_agents(state, obs, action, reward, state_n, obs_n, done_single)
+                self.train_agents(state, obs, action, reward, state_n, obs_n, done_single, schedule)
 
                 obs = obs_n
                 state = state_n
@@ -86,18 +86,28 @@ class Trainer(object):
                         print "[train_ep %d]" % (episode),"\tstep:", step, "\tep_step:", ep_step, "\treward", total_reward
                     break
 
-            if episode % FLAGS.eval_step == 0:
-                self.test(episode)
+                if step % FLAGS.eval_step == 0:
+                    self.test(step)
+                    break
 
         self._eval.summarize()
 
-    def get_schedule(self, obs, step):
-        ret = self._agent.schedule(obs)
-        # ret = np.full(self._n_predator, True)
+    def get_schedule(self, obs, step, type='schedule'):
+
+        if type == 'schedule':
+            ret = self._agent.schedule(obs)
+        elif type == 'connect':
+            ret = np.full(self._n_predator, True)
+        elif type == 'disconnect':
+            ret = np.full(self._n_predator, False)
+        elif type == 'random':
+            ret = np.random.choice([True, False], self._n_predator)
+        else:
+            ret = None
 
         return ret
 
-    def get_action(self, obs, step, state, train=True):
+    def get_action(self, obs, step, state, schedule, train=True):
         act_n = []
         self.epsilon = max(self.epsilon - epsilon_dec, epsilon_min)
 
@@ -121,18 +131,17 @@ class Trainer(object):
                 act_n.append(action)
                 continue
         else:
-            action_list = self._agent.act(state, obs)
+            action_list = self._agent.act(state, obs, schedule)
             for a in action_list:
                 act_n.append(a)
 
         # Action of prey
         act_n.append(self._prey_agent.act(None))
-        # act_n[1] = 2
 
         return np.array(act_n, dtype=np.int32)
 
-    def train_agents(self, state, obs, action, reward, state_n, obs_n, done):
-        self._agent.train(state, obs, action, reward, state_n, obs_n, done)
+    def train_agents(self, state, obs, action, reward, state_n, obs_n, done, schedule):
+        self._agent.train(state, obs, action, reward, state_n, obs_n, done, schedule)
 
     def test(self, curr_ep=None):
 
@@ -156,7 +165,8 @@ class Trainer(object):
                 step += 1
                 ep_step += 1
 
-                action = self.get_action(obs, step, state, False)
+                schedule = [True, True]
+                action = self.get_action(obs, step, state, schedule, False)
                 obs_n, reward, done, info = self._env.step(action)
                 state_n = self._env.get_full_encoding()[:, :, 2]
 

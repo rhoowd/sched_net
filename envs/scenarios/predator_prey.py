@@ -98,6 +98,7 @@ class Scenario(BaseScenario):
     def observation(self, agent, world):
         obs_native = np.array(agent.get_obs())
         # encode all predators and preys into same id
+        # TODO: try not to distinguish the same kind of agents..
         indistinguish = True
         if indistinguish:
             obs = np.array([])

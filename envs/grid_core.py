@@ -305,7 +305,6 @@ class World(object):
         # state representation plan: one-hot vector per grid cell
         # id-th index marked when any kind of agent is there
         # 0-th index marked when there is a wall
-        # TODO: try not to distinguish the same kind of agents..
         n = len(self.agents) # number of agents
 
         res = np.array([])

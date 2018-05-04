@@ -134,7 +134,7 @@ class Agent(object):
         c = np.asarray([elem[7] for elem in minibatch])
         c_i = np.asarray([elem[8] for elem in minibatch])
 
-        if FLAGS.schedule == 'connect' or FLAGS.schedule == 'disconnect':
+        if FLAGS.schedule == 'connect' or FLAGS.schedule == 'disconnect' or FLAGS.schedule == 'one':
 
             td_error, _ = self._critic.training_critic(s, a, r, s_, a, d)  # train critic
             _ = self._actor.training_actor(o, a_h, td_error, c[0])  # train actor

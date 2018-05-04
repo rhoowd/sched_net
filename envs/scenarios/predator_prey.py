@@ -108,9 +108,9 @@ class Scenario(BaseScenario):
                     idx = np.argmax(cell)
                     if idx == 0: # wall
                         compact_cell[0] = 1.0
-                    elif idx in self.atype_to_idx['predator']:
+                    elif idx in [world.agents[i].id for i in self.atype_to_idx['predator']]:
                         compact_cell[1] = 1.0
-                    elif idx in self.atype_to_idx['prey']:
+                    elif idx in [world.agents[i].id for i in self.atype_to_idx['prey']]:
                         compact_cell[2] = 1.0
                     else:
                         raise Exception('cell has to be wall/predator/prey!')

@@ -102,6 +102,9 @@ class Trainer(object):
             ret = np.full(self._n_predator, False)
         elif type == 'random':
             ret = np.random.choice([True, False], self._n_predator)
+        elif type == 'one':
+            ret = [True, False]
+
         else:
             ret = None
 

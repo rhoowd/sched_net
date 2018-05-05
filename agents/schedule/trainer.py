@@ -30,7 +30,7 @@ training_step = FLAGS.training_step
 testing_step = FLAGS.testing_step
 
 epsilon_dec = 1.0/training_step
-epsilon_min = 0.1
+epsilon_min = 0.01
 
 
 class Trainer(object):

@@ -41,7 +41,9 @@ class DataTable(object):
     def calculate(self):
         for i in range(self._n_row):
             self.average.append(np.sum(self._data_array[i])/self.cnt_table[i])
-            std = np.std(self._data_array[i])
+
+            std = np.sqrt(np.sum(np.square(self._data_array[i])) / self.cnt_table[i] - np.square(
+                np.sum(self._data_array[i]) / self.cnt_table[i]))
             confidence = self.z * std / np.sqrt(self._n_result)
             self.confidence.append(confidence)
 

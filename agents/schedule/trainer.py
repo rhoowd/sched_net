@@ -97,13 +97,13 @@ class Trainer(object):
         if type == 'schedule':
             ret = self._agent.schedule(obs)
         elif type == 'connect':
-            ret = np.full(self._n_predator, True)
+            ret = np.full(self._n_predator, 1.0)
         elif type == 'disconnect':
-            ret = np.full(self._n_predator, False)
+            ret = np.full(self._n_predator, 0.0)
         elif type == 'random':
-            ret = np.random.choice([True, False], self._n_predator)
+            ret = np.random.choice([1.0, 0.0], self._n_predator)
         elif type == 'one':
-            ret = [True, False]
+            ret = [1.0, 0.0]
 
         else:
             ret = None
@@ -168,7 +168,8 @@ class Trainer(object):
                 step += 1
                 ep_step += 1
 
-                schedule = [True, True]
+                schedule = self.get_schedule(obs, step, FLAGS.schedule)
+
                 action = self.get_action(obs, step, state, schedule, False)
                 obs_n, reward, done, info = self._env.step(action)
                 state_n = self._env.get_full_encoding()[:, :, 2]

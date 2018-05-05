@@ -20,6 +20,7 @@ from agents.schedule.ac_network import ActorNetwork
 from agents.schedule.ac_network import CriticNetwork
 from agents.schedule.ac_network import SchedulerNetwork
 from agents.evaluation import Evaluation
+from agents.schedule import schedule_net
 
 import logging
 import config
@@ -71,7 +72,7 @@ class Agent(object):
 
         obs_i = self.obs_to_onehot(obs)
         o = np.reshape(obs_i, self.input_dim)
-        q = self._actor.action_for_state(o[None], schedule)
+        q = self._actor.action_for_state(o[None], schedule[None])
 
         if np.isnan(q).any():
             print "Value Error: nan"
@@ -88,8 +89,8 @@ class Agent(object):
         o = np.reshape(obs_i, self.input_dim)
         s_prob = self._scheduler.schedule_for_obs(o[None])
         s_i = np.random.choice(self._n_predator, p=s_prob[0])
-        ret = np.full(self._n_predator, False)
-        ret[s_i] = True
+        ret = np.zeros(self._n_predator)
+        ret[s_i] = 1.0
         return ret
 
     def train(self, state, obs, action, reward, state_n, obs_n, done, schedule):
@@ -132,29 +133,19 @@ class Agent(object):
         o = np.asarray([elem[5] for elem in minibatch])
         a_h = np.asarray([elem[6] for elem in minibatch])
         c = np.asarray([elem[7] for elem in minibatch])
-        c_i = np.asarray([elem[8] for elem in minibatch])
 
-        if FLAGS.schedule == 'connect' or FLAGS.schedule == 'disconnect' or FLAGS.schedule == 'one':
-
+        if FLAGS.schedule == 'schedule':
             td_error, _ = self._critic.training_critic(s, a, r, s_, a, d)  # train critic
-            _ = self._actor.training_actor(o, a_h, td_error, c[0])  # train actor
-
+            _ = self._actor.training_actor(o, a_h, td_error, c)  # train actor
+            _ = self._scheduler.training_scheduler(o, c, td_error)
             _ = self._critic.training_target_critic()  # train slow target critic
 
-        elif FLAGS.schedule == 'random':
+        else:
             td_error, _ = self._critic.training_critic(s, a, r, s_, a, d)  # train critic
-            for i in range(len(td_error)):
-                _ = self._actor.training_actor(o[i][None], a_h[i][None], td_error[i][None], c[i])  # train actor
-
+            _ = self._actor.training_actor(o, a_h, td_error, c)  # train actor
             _ = self._critic.training_target_critic()  # train slow target critic
 
-        elif FLAGS.schedule == 'schedule':
-            td_error, _ = self._critic.training_critic(s, a, r, s_, a, d)  # train critic
-            for i in range(len(td_error)):
-                _ = self._actor.training_actor(o[i][None], a_h[i][None], td_error[i][None], c[i])  # train actor
 
-            _ = self._scheduler.training_scheduler(o, c_i, td_error)
-            _ = self._critic.training_target_critic()  # train slow target critic
 
         return 0
 

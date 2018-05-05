@@ -16,7 +16,7 @@ epsilon_min = 0.01
 import numpy as np
 import tensorflow as tf
 import config
-from agents.schedule import srnet_a
+from agents.schedule import schedule_net
 
 FLAGS = config.flags.FLAGS
 
@@ -51,6 +51,7 @@ class ActorNetwork:
         self.sess = sess
         self.state_dim = state_dim
         self.action_dim = action_dim
+        self.n_agent = FLAGS.n_predator
 
         if nn_id == None:
             scope = 'actor'
@@ -61,8 +62,8 @@ class ActorNetwork:
         self.state_ph = tf.placeholder(dtype=tf.float32, shape=[None, state_dim])
         # self.next_state_ph = tf.placeholder(dtype=tf.float32, shape=[None, state_dim])
         self.action_ph = tf.placeholder(dtype=tf.float32, shape=[None, self.action_dim])
+        self.schedule_ph = tf.placeholder(dtype=tf.float32, shape=[None, schedule_net.recv_out_dim * self.n_agent])
         self.td_errors = tf.placeholder(dtype=tf.float32, shape=[None, 1])
-        self.schedule = tf.placeholder(tf.bool, name='check')
 
         # indicators (go into target computation)
         self.is_training_ph = tf.placeholder(dtype=tf.bool, shape=())  # for dropout
@@ -70,7 +71,7 @@ class ActorNetwork:
         # actor network
         with tf.variable_scope(scope):
             # Policy's outputted action for each state_ph (for generating actions and training the critic)
-            self.actions = self.generate_actor_network(self.state_ph, self.schedule, trainable=True)
+            self.actions = self.generate_actor_network(self.state_ph, self.schedule_ph, self.n_agent, trainable=True)
 
         # actor loss function (mean Q-values under current policy with regularization)
         self.actor_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope)
@@ -97,24 +98,26 @@ class ActorNetwork:
         self.update_slow_targets_op_a = tf.group(*update_slow_target_ops_a)
 
     # will use this to initialize both the actor network its slowly-changing target network with same structure
-    def generate_actor_network(self, s, conn, trainable):
+    def generate_actor_network(self, s, schedule, num_agent, trainable):
 
-        return srnet_a.generate_srnet(s, conn, trainable)
+        return schedule_net.generate_schedulenet(s, schedule, num_agent, trainable)
 
     def action_for_state(self, state_ph, schedule):
 
+        schedule_vector = schedule_net.schedule_to_vector(schedule)
         return self.sess.run(self.actions, feed_dict={self.state_ph: state_ph,
                                                       self.is_training_ph: False,
-                                                      self.schedule: schedule})
+                                                      self.schedule_ph: schedule_vector})
 
     def training_actor(self, state_ph, action_ph, td_errors, schedule):
 
+        schedule_vector = schedule_net.schedule_to_vector(schedule)
         return self.sess.run(self.actor_train_op,
                              feed_dict={self.state_ph: state_ph,
                                         self.action_ph: action_ph,
                                         self.td_errors: td_errors,
                                         self.is_training_ph: True,
-                                        self.schedule: schedule})
+                                        self.schedule_ph: schedule_vector})
 
     # def training_target_actor(self):
     #     return self.sess.run(self.update_slow_targets_op_a,

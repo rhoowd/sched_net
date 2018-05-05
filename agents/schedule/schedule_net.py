@@ -1,10 +1,10 @@
 import tensorflow as tf
 import numpy as np
 
-obs_dim = 5
 
-send_out_dim = 2
-recv_out_dim = 3
+
+send_out_dim = 3
+recv_out_dim = 5
 
 action_dim = 5
 
@@ -13,11 +13,11 @@ h_r_1 = h_r_2 = h_r_3 = 64
 h_a_1 = h_a_2 = h_a_3 = 64
 
 # Flags
-flag_sender_share = True
-flag_receiver_share = True
+flag_sender_share = False
+flag_receiver_share = False
 
 
-def generate_schedulenet(obs, schedule, num_agent, trainable=True):
+def generate_schedulenet(obs, schedule, num_agent, obs_dim_agent, trainable=True):
 
     obs_list = list()
     sender_list = list()
@@ -26,7 +26,7 @@ def generate_schedulenet(obs, schedule, num_agent, trainable=True):
 
     # Make observation
     for i in range(num_agent):
-        obs_list.append(obs[:, i * obs_dim:(i + 1) * obs_dim])
+        obs_list.append(obs[:, i * obs_dim_agent:(i + 1) * obs_dim_agent])
 
     # Sender
     for i in range(num_agent):
@@ -158,11 +158,13 @@ def schedule_to_vector(schedule):
 
 
 if __name__ == '__main__':
+    obs_dim = 5
     num_agent = 2
+
     obs_ph = tf.placeholder(dtype=tf.float32, shape=[None, obs_dim * num_agent])
     schedule_ph = tf.placeholder(dtype=tf.float32, shape=[None, recv_out_dim * num_agent])
 
-    schedule_net = generate_schedulenet(obs_ph, schedule_ph, num_agent)
+    schedule_net = generate_schedulenet(obs_ph, schedule_ph, num_agent, obs_dim)
 
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())

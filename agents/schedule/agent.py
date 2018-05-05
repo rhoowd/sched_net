@@ -40,6 +40,7 @@ class Agent(object):
         self.map_size = FLAGS.map_size
 
         self._obs_dim = obs_dim
+
         self._action_dim_single = action_dim
         self._action_dim = action_dim * self._n_predator
         self._state_dim = (self.map_size**2) * (self._n_predator + self._n_prey)
@@ -56,7 +57,7 @@ class Agent(object):
 
         with my_graph.as_default():
             self.sess = tf.Session(graph=my_graph, config=tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=True)))
-            self._actor = ActorNetwork(self.sess, self.input_dim, self._action_dim, self._name)
+            self._actor = ActorNetwork(self.sess, self.input_dim, self._action_dim, 3*self._obs_dim, self._name)
             self._critic = CriticNetwork(self.sess, self._state_dim, self._action_dim, self._name)
 
             self._scheduler = SchedulerNetwork(self.sess, 3*self._obs_dim, self._n_predator)

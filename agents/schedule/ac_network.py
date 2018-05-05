@@ -47,9 +47,10 @@ np.set_printoptions(threshold=np.nan)
 
 
 class ActorNetwork:
-    def __init__(self, sess, state_dim, action_dim, nn_id=None):
+    def __init__(self, sess, state_dim, action_dim, obs_dim_agent, nn_id=None):
         self.sess = sess
         self.state_dim = state_dim
+        self.obs_dim_agent = obs_dim_agent
         self.action_dim = action_dim
         self.n_agent = FLAGS.n_predator
 
@@ -71,7 +72,7 @@ class ActorNetwork:
         # actor network
         with tf.variable_scope(scope):
             # Policy's outputted action for each state_ph (for generating actions and training the critic)
-            self.actions = self.generate_actor_network(self.state_ph, self.schedule_ph, self.n_agent, trainable=True)
+            self.actions = self.generate_actor_network(self.state_ph, self.schedule_ph, self.n_agent, self.obs_dim_agent, trainable=True)
 
         # actor loss function (mean Q-values under current policy with regularization)
         self.actor_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope)
@@ -98,9 +99,9 @@ class ActorNetwork:
         self.update_slow_targets_op_a = tf.group(*update_slow_target_ops_a)
 
     # will use this to initialize both the actor network its slowly-changing target network with same structure
-    def generate_actor_network(self, s, schedule, num_agent, trainable):
+    def generate_actor_network(self, s, schedule, num_agent, obs_dim_agent, trainable):
 
-        return schedule_net.generate_schedulenet(s, schedule, num_agent, trainable)
+        return schedule_net.generate_schedulenet(s, schedule, num_agent, obs_dim_agent, trainable)
 
     def action_for_state(self, state_ph, schedule):
 

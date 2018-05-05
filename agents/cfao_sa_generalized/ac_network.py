@@ -125,20 +125,16 @@ class ActorNetwork:
                                    bias_initializer=tf.constant_initializer(0.1),  # biases
                                    use_bias=True, trainable=trainable, name='dense_a3')
 
-        a1 = tf.layers.dense(hidden_3, 5, activation=tf.nn.softmax,
-                             kernel_initializer=tf.random_normal_initializer(0., .1),  # weights
-                             bias_initializer=tf.constant_initializer(0.1),  # biases
-                             trainable=trainable, name='dense_aa1',
-                             use_bias=True)
+        actions = []
+        for i in range(self.n_agent):
+            a = tf.layers.dense(hidden_3, self.action_dim, activation=tf.nn.softmax,
+                                kernel_initializer=tf.random_normal_initializer(0., .1),  # weights
+                                bias_initializer=tf.constant_initializer(0.1),  # biases
+                                trainable=trainable, name='dense_aa' + str(i),
+                                use_bias=True)
+            actions.append(a)
 
-        a2 = tf.layers.dense(hidden_3, 5, activation=tf.nn.softmax,
-                             kernel_initializer=tf.random_normal_initializer(0., .1),  # weights
-                             bias_initializer=tf.constant_initializer(0.1),  # biases
-                             trainable=trainable, name='dense_aa2',
-                             use_bias=True)
-
-        actions = tf.concat([a1, a2], axis=-1)
-        return actions
+        return tf.concat(actions, axis=-1)
 
     def action_for_state(self, state_ph):
         return self.sess.run(self.actions,

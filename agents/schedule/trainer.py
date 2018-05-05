@@ -92,10 +92,16 @@ class Trainer(object):
 
         self._eval.summarize()
 
-    def get_schedule(self, obs, step, type='schedule'):
+    def get_schedule(self, obs, step, type='schedule', train=True):
 
         if type == 'schedule':
-            ret = self._agent.schedule(obs)
+            if train and (step < FLAGS.m_size * FLAGS.pre_train_step or np.random.rand() < self.epsilon):
+                i = np.random.choice(range(self._n_predator), 1)
+                ret = np.full(self._n_predator, 0.0)
+                ret[i] = 1.0
+                return ret
+            else:
+                ret = self._agent.schedule(obs)
         elif type == 'connect':
             ret = np.full(self._n_predator, 1.0)
         elif type == 'disconnect':

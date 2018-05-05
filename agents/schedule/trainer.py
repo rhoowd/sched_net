@@ -109,8 +109,8 @@ class Trainer(object):
         elif type == 'random':
             ret = np.random.choice([1.0, 0.0], self._n_predator)
         elif type == 'one':
-            ret = [1.0, 0.0]
-
+            ret = np.full(self._n_predator, 0.0)
+            ret[0] = 1.0
         else:
             ret = None
 

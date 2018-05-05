@@ -62,7 +62,7 @@ class ActorNetwork:
         # concat action space
         self.action_ph = tf.placeholder(dtype=tf.int32, shape=[None, n_agent])
         # self.action_ph = tf.placeholder(dtype=tf.float32, shape=[None])
-        self.a_onehot = tf.concat(tf.one_hot(self.action_ph, self.action_dim, 1.0, 0.0), axis=-1)
+        self.a_onehot = tf.reshape(tf.one_hot(self.action_ph, self.action_dim, 1.0, 0.0), [-1, action_dim * n_agent])
         self.td_errors = tf.placeholder(dtype=tf.float32, shape=[None, 1])
 
         # indicators (go into target computation)
@@ -85,7 +85,7 @@ class ActorNetwork:
 
         self.responsible = tf.multiply(self.actions, self.a_onehot)
 
-        log_prob = tf.log(tf.reduce_sum(self.responsible, reduction_indices=1, keep_dims=True))
+        log_prob = tf.log(tf.reduce_sum(self.responsible, reduction_indices=1, keepdims=True))
         entropy = -tf.reduce_sum(self.actions * tf.log(self.actions), 1)
 
         self.loss = tf.reduce_sum(-(tf.multiply(log_prob, self.td_errors) + 0.01 * entropy))

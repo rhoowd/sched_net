@@ -138,9 +138,9 @@ class ConcatPredatorAgentCFAO(object):
         s, o, a, r, s_, d = map(np.array, zip(*minibatch))
 
         # preprocess minibatch
-        a_concat = np.concatenate(a, axis=1)
+        a_concat = a #np.concatenate(a, axis=1)
         a_joint = np.apply_along_axis(self.compose_joint_action, 1, a)
-        o = np.concatenate(o, axis=1)
+        o = np.reshape(o, [-1, self._obs_dim])
 
         td_error, _ = self._critic.training_critic(s, a_joint, r, s_, a_joint, d)  # train critic
         _ = self._actor.training_actor(o, a_concat, td_error)  # train actor

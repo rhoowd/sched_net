@@ -23,7 +23,7 @@ epsilon_min = 0.1
 class Trainer(object):
 
     def __init__(self, env):
-        logger.info("Centralized DQN Trainer is created")
+        logger.info("Fully-observable critic / Partially-observable actor PG trainer is created")
 
         self._env = env
         self._eval = Evaluation()
@@ -47,7 +47,7 @@ class Trainer(object):
 
         global_step = 0
         episode_num = 0
-        print_flag = False
+        print_flag = True
 
         while global_step < training_step:
             episode_num += 1
@@ -107,9 +107,9 @@ class Trainer(object):
         predator_obs = [obs_n[i] for i in self._agent_profile['predator']['idx']]
         predator_action = [action_n[i] for i in self._agent_profile['predator']['idx']]
         predator_reward = [reward_n[i] for i in self._agent_profile['predator']['idx']]
-        predator_obs_next = [obs_n_next[i] for i in self._agent_profile['predator']['idx']]
+        _ = [obs_n_next[i] for i in self._agent_profile['predator']['idx']] # predator_obs_next
         self._predator_agent.train(state, predator_obs, predator_action, predator_reward, state_next,
-                                   predator_obs_next, done)
+                                   done)
 
     def test(self, curr_ep=None):
 

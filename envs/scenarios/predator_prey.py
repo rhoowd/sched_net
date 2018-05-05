@@ -115,6 +115,7 @@ class Scenario(BaseScenario):
                         compact_cell[2] = 1.0
                     else:
                         raise Exception('cell has to be wall/predator/prey!')
+                obs = np.concatenate([obs, compact_cell])
             return obs
         else:
             return obs_native

@@ -47,6 +47,7 @@ class ActorNetwork:
     def __init__(self, sess, n_agent, state_dim, action_dim, nn_id=None):
 
         self.sess = sess
+        self.n_agent = n_agent
         self.state_dim = state_dim
         self.action_dim = action_dim
 
@@ -58,11 +59,10 @@ class ActorNetwork:
         # placeholders
         self.state_ph = tf.placeholder(dtype=tf.float32, shape=[None, state_dim])
         self.next_state_ph = tf.placeholder(dtype=tf.float32, shape=[None, state_dim])
-        self.action_ph = [tf.placeholder(dtype=tf.float32, shape=[None])
-                          for _ in range(n_agent)]
-        self.action_ph = tf.placeholder(dtype=tf.float32, shape=[None])
-        # TODO concat action space
-        self.a_onehot = tf.one_hot(self.action_ph, self.action_dim, 1.0, 0.0)
+        # concat action space
+        self.action_ph = tf.placeholder(dtype=tf.int32, shape=[None, n_agent])
+        # self.action_ph = tf.placeholder(dtype=tf.float32, shape=[None])
+        self.a_onehot = tf.concat(tf.one_hot(self.action_ph, self.action_dim, 1.0, 0.0), axis=-1)
         self.td_errors = tf.placeholder(dtype=tf.float32, shape=[None, 1])
 
         # indicators (go into target computation)
@@ -83,7 +83,7 @@ class ActorNetwork:
         # actor loss function (mean Q-values under current policy with regularization)
         self.actor_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope)
 
-        self.responsible = tf.multiply(self.actions, self.action_ph)
+        self.responsible = tf.multiply(self.actions, self.a_onehot)
 
         log_prob = tf.log(tf.reduce_sum(self.responsible, reduction_indices=1, keep_dims=True))
         entropy = -tf.reduce_sum(self.actions * tf.log(self.actions), 1)

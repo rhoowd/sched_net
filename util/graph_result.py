@@ -34,7 +34,7 @@ if __name__ == '__main__':
                     r_str = line.split("\t")[2]
                     result = float(r_str)
 
-                    x.append(episode)
+                    x.append(int(episode))
                     y.append(result)
                 except:
                     print(line)

@@ -47,10 +47,10 @@ np.set_printoptions(threshold=np.nan)
 
 
 class ActorNetwork:
-    def __init__(self, sess, state_dim, action_dim, obs_dim_agent, nn_id=None):
+    def __init__(self, sess, n_agent, state_dim, action_dim, nn_id=None):
         self.sess = sess
         self.state_dim = state_dim
-        self.obs_dim_agent = obs_dim_agent
+        self.obs_dim_agent = state_dim // n_agent
         self.action_dim = action_dim
         self.n_agent = FLAGS.n_predator
 
@@ -62,7 +62,8 @@ class ActorNetwork:
         # placeholders
         self.state_ph = tf.placeholder(dtype=tf.float32, shape=[None, state_dim])
         # self.next_state_ph = tf.placeholder(dtype=tf.float32, shape=[None, state_dim])
-        self.action_ph = tf.placeholder(dtype=tf.float32, shape=[None, self.action_dim])
+        self.action_ph = tf.placeholder(dtype=tf.int32, shape=[None, n_agent])
+        self.a_onehot = tf.reshape(tf.one_hot(self.action_ph, self.action_dim, 1.0, 0.0), [-1, action_dim * n_agent])
         self.schedule_ph = tf.placeholder(dtype=tf.float32, shape=[None, schedule_net.recv_out_dim * self.n_agent])
         self.td_errors = tf.placeholder(dtype=tf.float32, shape=[None, 1])
 
@@ -77,9 +78,9 @@ class ActorNetwork:
         # actor loss function (mean Q-values under current policy with regularization)
         self.actor_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope)
 
-        self.responsible = tf.multiply(self.actions, self.action_ph)
+        self.responsible = tf.multiply(self.actions, self.a_onehot)
 
-        log_prob = tf.log(1e-10+tf.reduce_sum(self.responsible, reduction_indices=1, keep_dims=True))
+        log_prob = tf.log(1e-10+tf.reduce_sum(self.responsible, reduction_indices=1, keepdims=True))
         entropy = -tf.reduce_sum(self.actions * tf.log(1e-10+self.actions), 1)
         # 1e-10 is added to avoid log(0) which causes nan value error
 
@@ -235,14 +236,14 @@ class CriticNetwork:
 
 
 class SchedulerNetwork:
-    def __init__(self, sess, obs_dim, n_player):
+    def __init__(self, sess, n_player, obs_dim):
 
         self.sess = sess
-        self.obs_dim = obs_dim
+        self.obs_dim = obs_dim # concatenated observation space
         self.n_player = n_player
 
         # placeholders
-        self.obs_ph = tf.placeholder(dtype=tf.float32, shape=[None, self.obs_dim * self.n_player])
+        self.obs_ph = tf.placeholder(dtype=tf.float32, shape=[None, self.obs_dim])
         self.schedule_ph = tf.placeholder(dtype=tf.float32, shape=[None, self.n_player])
 
         self.td_errors = tf.placeholder(dtype=tf.float32, shape=[None, 1])
@@ -255,7 +256,7 @@ class SchedulerNetwork:
         # actor loss function (mean Q-values under current policy with regularization)
         self.actor_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='schedule')
         self.responsible = tf.multiply(self.schedule_policy[0], self.schedule_ph)  # =\pi (policy)
-        log_prob = tf.log(1e-10+tf.reduce_sum(self.responsible, reduction_indices=1, keep_dims=True))
+        log_prob = tf.log(1e-10+tf.reduce_sum(self.responsible, reduction_indices=1, keepdims=True))
         entropy = -tf.reduce_sum(self.schedule_policy[0] * tf.log(1e-10+self.schedule_policy[0]), 1)
         self.loss = tf.reduce_sum(-(tf.multiply(log_prob, self.td_errors) + 0.01 * entropy))
 

@@ -1,18 +1,3 @@
-#!/usr/bin/env python
-# coding=utf8
-"""
-Layer 2 -> 3
-lr_actor = 1e-5  # learning rate for the actor
-lr_critic = 1e-4  # learning rate for the critic
-training step: 10000
-df: 0.999
-flags.DEFINE_integer("b_size", 10000, "Size of the replay memory")
-flags.DEFINE_integer("m_size", 64, "Minibatch size")
-flags.DEFINE_integer("pre_train_step", 10, "during [m_size * pre_step] take random action")
-epsilon = 0.1
-epsilon_min = 0.01
-
-"""
 import numpy as np
 import tensorflow as tf
 import config

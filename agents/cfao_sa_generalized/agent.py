@@ -1,22 +1,3 @@
-#!/usr/bin/env python
-# coding=utf8
-
-"""
-===================================================================================
- :mod:`cfao` Critich with full state and Actor with limitied obs,  Separate Action
-===================================================================================
-.. moduleauthor:: Daewoo Kim
-.. note:: note...
-
-=====
-
-40000까지 돌리면 됨
-cfao_sa 2-s-pursuit-map-3-a-cfao_sa-lr-0.0001-ms-64-seed-0-0430000319
-h_num = 64
-lr_actor = 1e-5  # learning rate for the actor
-lr_critic = 1e-4  # learning rate for the critic
-tau = 5e-2  # soft target update rate
-"""
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import

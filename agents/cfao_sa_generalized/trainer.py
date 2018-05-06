@@ -60,7 +60,7 @@ class Trainer(object):
                 global_step += 1
                 step_in_ep += 1
 
-                action_n = self.get_action(state, obs_n, global_step)
+                action_n = self.get_action(obs_n, global_step)
 
                 obs_n_next, reward_n, done_n, _ = self._env.step(action_n)
                 state_next = self._env.get_global_state()
@@ -83,7 +83,7 @@ class Trainer(object):
 
         self._eval.summarize()
 
-    def get_action(self, state, obs_n, global_step, train=True):
+    def get_action(self, obs_n, global_step, train=True):
         act_n = [0] * len(obs_n)
         self.epsilon = max(self.epsilon - epsilon_dec, epsilon_min)
 
@@ -134,7 +134,7 @@ class Trainer(object):
                 global_step += 1
                 step_in_ep += 1
 
-                action_n = self.get_action(state, obs_n, global_step, False)
+                action_n = self.get_action(obs_n, global_step, False)
                 obs_n_next, reward, done_n, _ = self._env.step(action_n)
                 state_next = self._env.get_global_state()
 

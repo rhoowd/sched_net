@@ -3,8 +3,5 @@ results/*
 .idea
 *.log
 *.DS_Store*
-<<<<<<< HEAD
 .vscode
-=======
 run.sh
->>>>>>> origin/feature/schedule

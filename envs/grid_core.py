@@ -68,8 +68,6 @@ class CoreAgent(Entity):
         self._x = 0
         self._y = 0
         self.obs_range = 1
-        # the agent can partially observe the grid by default
-        self.fully_observable = False
 
     def update_obs(self, obs):
         self._obs = obs
@@ -289,12 +287,9 @@ class World(object):
 
     def set_observations(self):
         for agent in self.agents:
-            if agent.fully_observable:
-                obs = self.grid
-            else:
-                x, y = agent.pos
-                r = agent.obs_range
-                obs = self.grid.slice(x-r, y-r,r*2+1,r*2+1)
+            x, y = agent.pos
+            r = agent.obs_range
+            obs = self.grid.slice(x-r, y-r,r*2+1,r*2+1)
             agent.update_obs(self.encode_grid_as_state(obs))
 
     def get_global_state(self):

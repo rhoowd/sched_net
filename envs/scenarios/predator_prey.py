@@ -7,9 +7,8 @@ FLAGS = config.flags.FLAGS
 
 
 class Prey(CoreAgent):
-    def __init__(self, fully_observable=False):
+    def __init__(self):
         super(Prey, self).__init__('prey', 'green')
-        self.fully_observable = fully_observable
         self._movement_mask = np.array(
             [[0,1,0],
              [1,0,1],
@@ -22,9 +21,8 @@ class Prey(CoreAgent):
         return np.sum(minimap*self._movement_mask) == 4
 
 class Predator(CoreAgent):
-    def __init__(self, fully_observable=False):
+    def __init__(self):
         super(Predator, self).__init__('predator', 'blue')
-        self.fully_observable = fully_observable
         self.obs_range = 1
 
 class Scenario(BaseScenario):
@@ -46,13 +44,13 @@ class Scenario(BaseScenario):
         # add predators
         n_predator = FLAGS.n_predator
         for i in range(n_predator):
-            agents.append(Predator(fully_observable=False))
+            agents.append(Predator())
             self.atype_to_idx['predator'].append(i)
 
         # add preys
         n_prey = FLAGS.n_prey
         for i in range(n_prey):
-            agents.append(Prey(fully_observable=False))
+            agents.append(Prey())
             self.atype_to_idx['prey'].append(n_predator + i)
 
         # used by BaseScenario

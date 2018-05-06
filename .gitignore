@@ -3,3 +3,4 @@ results/*
 .idea
 *.log
 *.DS_Store*
+run.sh

@@ -77,8 +77,9 @@ class Trainer(object):
                         print("[train_ep %d]" % (episode_num),"\tstep:", global_step, "\tep_step:", step_in_ep, "\treward", total_reward)
                     break
 
-            if episode_num % FLAGS.eval_step == 0:
-                self.test(episode_num)
+                if global_step % FLAGS.eval_step == 0:
+                    self.test(global_step)
+                    break
 
         self._eval.summarize()
 

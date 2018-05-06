@@ -1,7 +1,8 @@
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 import tensorflow as tf
 import numpy as np
-
-
 
 send_out_dim = 3
 recv_out_dim = 5
@@ -172,11 +173,10 @@ if __name__ == '__main__':
     obs_data = [range(10)]
     obs_data = [[0, 1, 2, 3, 4, 0, 1, 2, 3, 4]]
     schedule_vector = schedule_to_vector([[1.0, 1.0]])
-    print "schedule:", schedule_vector
+    print("schedule:", schedule_vector)
 
     result = sess.run(schedule_net, feed_dict={obs_ph: obs_data, schedule_ph: schedule_vector})
-    print "result:", np.array(result)
-    print ""
+    print("result:", np.array(result))
 
     exit()
 
@@ -192,7 +192,7 @@ if __name__ == '__main__':
     obs_data = [range(10)]
     obs_data = [[0, 1, 2, 3, 4, 0, 1, 2, 3, 4]]
     schedule_vector = schedule_to_vector([[1.0, 1.0]])
-    print "schedule:", schedule_vector
+    print("schedule:", schedule_vector)
 
     result = sess.run(schedule_net, feed_dict={obs_ph: obs_data, schedule_ph: schedule_vector})
-    print "result:", np.array(result)
+    print("result:", np.array(result))

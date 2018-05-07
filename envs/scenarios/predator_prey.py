@@ -1,3 +1,6 @@
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 import numpy as np
 from envs.grid_core import World, CoreAgent
 from envs.scenario import BaseScenario
@@ -114,9 +117,13 @@ class Scenario(BaseScenario):
                     else:
                         raise Exception('cell has to be wall/predator/prey!')
                 obs = np.concatenate([obs, compact_cell])
-            return obs
+            ret = obs
         else:
-            return obs_native
+            ret = obs_native
+        # encode current position into observation
+        x, y = agent.pos
+        ret = np.concatenate([ret, [x / world.grid.width, y / world.grid.height]])
+        return ret
 
     def done(self, agent, world):
         return self.prey_captured

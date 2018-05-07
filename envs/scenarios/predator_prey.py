@@ -120,6 +120,9 @@ class Scenario(BaseScenario):
             ret = obs
         else:
             ret = obs_native
+        if not FLAGS.obs_diagonal:
+            blk = ret.reshape([-1, 3])
+            ret = np.concatenate([[blk[1]], blk[3:6], [blk[7]]]).flatten()
         # encode current position into observation
         x, y = agent.pos
         ret = np.concatenate([ret, [x / world.grid.width, y / world.grid.height]])

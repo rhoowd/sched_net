@@ -80,7 +80,7 @@ class ActorNetwork:
 
         self.responsible = tf.multiply(self.actions, self.a_onehot)
 
-        log_prob = tf.log(1e-10+tf.reduce_sum(self.responsible, reduction_indices=1, keepdims=True))
+        log_prob = tf.log(1e-10+tf.reduce_sum(self.responsible, reduction_indices=1, keep_dims=True))
         entropy = -tf.reduce_sum(self.actions * tf.log(1e-10+self.actions), 1)
         # 1e-10 is added to avoid log(0) which causes nan value error
 
@@ -256,7 +256,7 @@ class SchedulerNetwork:
         # actor loss function (mean Q-values under current policy with regularization)
         self.actor_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='schedule')
         self.responsible = tf.multiply(self.schedule_policy[0], self.schedule_ph)  # =\pi (policy)
-        log_prob = tf.log(1e-10+tf.reduce_sum(self.responsible, reduction_indices=1, keepdims=True))
+        log_prob = tf.log(1e-10+tf.reduce_sum(self.responsible, reduction_indices=1, keep_dims=True))
         entropy = -tf.reduce_sum(self.schedule_policy[0] * tf.log(1e-10+self.schedule_policy[0]), 1)
         self.loss = tf.reduce_sum(-(tf.multiply(log_prob, self.td_errors) + 0.01 * entropy))
 

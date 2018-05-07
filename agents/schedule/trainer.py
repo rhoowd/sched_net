@@ -71,7 +71,7 @@ class Trainer(object):
 
         global_step = 0
         episode_num = 0
-        print_flag = True
+        print_flag = False
 
         while global_step < training_step:
             episode_num += 1

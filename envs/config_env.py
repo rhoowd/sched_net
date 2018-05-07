@@ -9,7 +9,8 @@ def config_env(_flags):
     flags.DEFINE_integer("n_predator", 2, "Number of predators")
     flags.DEFINE_integer("n_prey", 1, "Number of preys")
     flags.DEFINE_boolean("obs_diagonal", "true", "Whether the agent can see in diagonal directions")
-
+    flags.DEFINE_boolean("moving_prey", "true", "Whether the prey is moving")
+    
     # Observation
     flags.DEFINE_integer("history_len", 1, "How many previous steps we look back")
 

@@ -20,7 +20,7 @@ from __future__ import absolute_import
 import six
 import numpy as np
 from agents.schedule.agent import SchedulingAgent
-from agents.simple_agent import RandomAgent
+from agents.simple_agent import RandomAgent, StaticAgent
 from agents.evaluation import Evaluation
 import logging
 import config
@@ -53,10 +53,17 @@ class Trainer(object):
                                                state_dim=self._state_dim,
                                                obs_dim=self._agent_profile["predator"]["obs_dim"][0])
 
-        # randomly moving prey agent
+        
         self._prey_agent = []
+        if FLAGS.moving_prey:
+            # randomly moving prey agent
+            NewAgent = RandomAgent
+            prey_param = 5
+        else:
+            NewAgent = StaticAgent
+            prey_param = 2
         for _ in range(self._agent_profile['prey']['n_agent']):
-            self._prey_agent.append(RandomAgent(5))
+            self._prey_agent.append(NewAgent(prey_param))
 
         self.epsilon = 0.3
 

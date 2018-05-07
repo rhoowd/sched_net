@@ -27,6 +27,7 @@ def config_agent(_flags):
     flags.DEFINE_float("a_lr", 0.00001, "Learning rate")
     flags.DEFINE_float("tau", 0.05, "Learning rate")
     flags.DEFINE_boolean("use_action_in_critic", False, "Use guided samples")
+    flags.DEFINE_integer("h_critic", 64, "Width of hidden layer for critic")
 
     # Scheduling
     flags.DEFINE_float("s_lr", 0.0001, "Learning rate")
@@ -46,4 +47,4 @@ def get_filename():
 
     # return "a-" + FLAGS.agent + "-lr-" + str(FLAGS.lr) + "-ms-" + str(FLAGS.m_size)
     return "a-" + FLAGS.agent + "-sc-" + str(FLAGS.schedule) + "-clr-" + str(FLAGS.c_lr) + "-alr-" + str(
-        FLAGS.a_lr) + "-slr-" + str(FLAGS.s_lr) + "-ms-" + str(FLAGS.m_size)
+        FLAGS.a_lr) + "-slr-" + str(FLAGS.s_lr) + "-ms-" + str(FLAGS.m_size)+ "-hc-" + str(FLAGS.h_critic)

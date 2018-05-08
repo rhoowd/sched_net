@@ -48,8 +48,28 @@ class DataTable(object):
             self.confidence.append(confidence)
 
     def get_result(self):
+        # fig = plt.figure()
+        x = []
+        y = []
+        lb = []
+        ub = []
+        interval = []
         for i in range(self._n_row):
             print self.average[i], self.average[i]-self.confidence[i], 2*self.confidence[i], i+1
+            x.append(i+1)
+            y.append(self.average[i])
+            lb.append(self.average[i]-self.confidence[i])
+            interval.append(2*self.confidence[i])
+            ub.append(self.average[i]+self.confidence[i])
+
+        plt.plot(x, y)
+        plt.fill_between(x, lb, ub, alpha=0.4)
+
+        plt.xlabel('Training step', fontsize=16)
+        plt.ylabel('Step to capture', fontsize=16)
+        plt.grid(True)
+
+        plt.savefig("plot_conf.pdf")
 
 
 if __name__ == '__main__':

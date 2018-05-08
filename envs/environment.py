@@ -94,7 +94,7 @@ class MultiAgentEnv(gym.Env):
         obs_n = []
         reward_n = []
         done_n = []
-        info_n = {'n': []}
+        info_n = []
 
         self.agents = self.world.agents
         self.world.step(action_n)
@@ -103,7 +103,7 @@ class MultiAgentEnv(gym.Env):
             obs_n.append(self._get_obs(agent))
             reward_n.append(self._get_reward(agent))
             done_n.append(self._get_done(agent))
-            info_n['n'].append(self._get_info(agent))
+            info_n.append(self._get_info(agent))
 
         return obs_n, reward_n, done_n, info_n
 
@@ -141,5 +141,10 @@ class MultiAgentEnv(gym.Env):
             return 0.0
         return self.reward_callback(agent, self.world)
 
-    def get_global_state(self):
-        return self.world.get_global_state()
+    # def get_global_state(self):
+    #     return self.world.get_global_state()
+    def get_info(self):
+        info_n = []
+        for agent in self.agents:
+            info_n.append(self._get_info(agent))
+        return info_n

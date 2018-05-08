@@ -44,7 +44,7 @@ class Trainer(object):
         self._env = env
         self._eval = Evaluation()
         self._agent_profile = self._env.get_agent_profile()
-        self._state_dim = self._env.get_global_state().shape[0]
+        self._state_dim = self._env.get_info()[0]['state'].shape[0]
         self._n_predator = self._agent_profile['predator']['n_agent']
 
         # single scheduling agent
@@ -77,7 +77,7 @@ class Trainer(object):
             episode_num += 1
             step_in_ep = 0
             obs_n = self._env.reset()
-            state = self._env.get_global_state()
+            state = self._env.get_info()[0]['state']
             total_reward = 0
 
             while True:
@@ -89,8 +89,8 @@ class Trainer(object):
 
                 action_n = self.get_action(obs_n, global_step, predator_schedule)
 
-                obs_n_next, reward_n, done_n, _ = self._env.step(action_n)
-                state_next = self._env.get_global_state()
+                obs_n_next, reward_n, done_n, info_n = self._env.step(action_n)
+                state_next = info_n[0]['state']
 
                 done_single = sum(done_n) > 0
                 self.train_agents(state, obs_n, action_n, reward_n, state_next, obs_n_next, predator_schedule, done_single)
@@ -180,7 +180,7 @@ class Trainer(object):
         while global_step < testing_step:
             episode_num += 1
             obs_n = self._env.reset()
-            state = self._env.get_global_state()
+            state = self._env.get_info()[0]['state']
             if test_flag:
                 print("\nInit\n", state)
             total_reward = 0
@@ -195,8 +195,8 @@ class Trainer(object):
                 predator_schedule = self.get_schedule(obs_n, global_step, FLAGS.schedule)
 
                 action_n = self.get_action(obs_n, global_step, predator_schedule, False)
-                obs_n_next, reward, done, _ = self._env.step(action_n)
-                state_next = self._env.get_global_state()
+                obs_n_next, reward_n, done_n, info_n = self._env.step(action_n)
+                state_next = info_n[0]['state']
 
                 if test_flag:
                     aa = six.moves.input('>')
@@ -207,9 +207,9 @@ class Trainer(object):
 
                 obs_n = obs_n_next
                 state = state_next
-                total_reward += np.sum(reward)
+                total_reward += np.sum(reward_n)
 
-                if is_episode_done(done, global_step, "test") or step_in_ep > FLAGS.max_step:
+                if is_episode_done(done_n, global_step, "test") or step_in_ep > FLAGS.max_step:
                     break
 
         print("Test result: Average steps to capture: ", curr_ep, float(global_step)/episode_num)

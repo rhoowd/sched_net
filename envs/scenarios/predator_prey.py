@@ -1,12 +1,14 @@
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+import itertools
 import numpy as np
 from envs.grid_core import World, CoreAgent
 from envs.scenario import BaseScenario
 import config
 
 FLAGS = config.flags.FLAGS
+IDX_TO_OBJECT = config.IDX_TO_OBJECT
 
 
 class Prey(CoreAgent):
@@ -96,8 +98,27 @@ class Scenario(BaseScenario):
                 return -1
         return 0
 
+    def encode_grid_to_onehot(self, world, grid):
+        encoded = grid.encode() # full encoded map
+        # state representation plan: one-hot vector per grid cell
+        # id-th index marked when any kind of agent is there
+        # 0-th index marked when there is a wall
+        n = len(world.agents) # number of agents
+
+        res = np.array([])
+        for cell in encoded.reshape(-1, 3):
+            cell_onehot = np.zeros(n + 1)
+            if IDX_TO_OBJECT[cell[0]] == 'wall':
+                cell_onehot[0] = 1.0
+            elif cell[0] != 0:
+                cell_onehot[cell[2]] = 1.0
+            res = np.concatenate((res, cell_onehot))
+
+        return res
+
     def observation(self, agent, world):
-        obs_native = np.array(agent.get_obs())
+        # obs_native = np.array(agent.get_obs())
+        obs_native = self.encode_grid_to_onehot(world, agent.get_obs())
         # encode all predators and preys into same id
         # TODO: try not to distinguish the same kind of agents..
         indistinguish = True
@@ -127,6 +148,22 @@ class Scenario(BaseScenario):
         x, y = agent.pos
         ret = np.concatenate([ret, [x / world.grid.width, y / world.grid.height]])
         return ret
+
+    def info(self, agent, world):
+        # info() returns the global state
+        coord_as_state = True
+        if coord_as_state:
+            # encode coordinates into state
+            width = world.grid.width
+            height = world.grid.height
+            encoded = world.grid.encode()[:, :, 2]
+            state = np.zeros((len(world.agents), 2)) # n_agents * (x,y)
+            for x, y in itertools.product(*map(range, (width, height))):
+                if encoded[x, y] != 0:
+                    state[encoded[x, y] - 1] = np.array([x/width, y/height])
+            return {'state': state.flatten()}
+        else:
+            return {'state': self.encode_grid_to_onehot(world, world.grid)}
 
     def done(self, agent, world):
         return self.prey_captured

@@ -28,7 +28,7 @@ class Trainer(object):
         self._env = env
         self._eval = Evaluation()
         self._agent_profile = self._env.get_agent_profile()
-        self._state_dim = self._env.get_global_state().shape[0]
+        self._state_dim = self._env.get_info()[0]['state'].shape[0]
 
         # joint CAC predator agent
         self._predator_agent = JointPredatorAgentFO(n_agent=self._agent_profile['predator']['n_agent'],
@@ -51,7 +51,7 @@ class Trainer(object):
             episode_num += 1
             step_in_ep = 0
             _ = self._env.reset() # obs_n
-            state = self._env.get_global_state()
+            state = self._env.get_info()[0]['state']
             total_reward = 0
 
             while True:
@@ -61,8 +61,8 @@ class Trainer(object):
                 # action_n = self.get_action(obs_n, global_step)
                 action_n = self.get_action(state, global_step)
 
-                _, reward_n, done_n, _ = self._env.step(action_n) # obs_n_next
-                state_next = self._env.get_global_state()
+                _, reward_n, done_n, info_n = self._env.step(action_n) # obs_n_next
+                state_next = info_n[0]['state']
 
                 done_single = sum(done_n) > 0
                 # self.train_agents(obs_n, action_n, reward_n, obs_n_next, done_single)
@@ -134,7 +134,7 @@ class Trainer(object):
             episode_num += 1
             step_in_ep = 0
             obs_n = self._env.reset()
-            state = self._env.get_global_state()
+            state = self._env.get_info()[0]['state']
             if test_flag:
                 print("\nInit\n", obs_n[0])
             total_reward = 0
@@ -145,8 +145,8 @@ class Trainer(object):
                 step_in_ep += 1
 
                 action_n = self.get_action(state, global_step, False)
-                obs_n_next, reward_n, done_n, _ = self._env.step(action_n)
-                state_next = self._env.get_global_state()
+                obs_n_next, reward_n, done_n, info_n = self._env.step(action_n)
+                state_next = info_n[0]['state']
                 
                 if test_flag:
                     aa = six.moves.input('>')

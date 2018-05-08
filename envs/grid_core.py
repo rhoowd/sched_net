@@ -4,7 +4,6 @@ import config
 
 COLOR_TO_IDX = config.COLOR_TO_IDX
 OBJECT_TO_IDX = config.OBJECT_TO_IDX
-IDX_TO_OBJECT = config.IDX_TO_OBJECT
 
 N = 0
 E = 1
@@ -290,25 +289,5 @@ class World(object):
             x, y = agent.pos
             r = agent.obs_range
             obs = self.grid.slice(x-r, y-r,r*2+1,r*2+1)
-            agent.update_obs(self.encode_grid_as_state(obs))
-
-    def get_global_state(self):
-        return self.encode_grid_as_state(self.grid)
-
-    def encode_grid_as_state(self, grid):
-        encoded = grid.encode() # full encoded map
-        # state representation plan: one-hot vector per grid cell
-        # id-th index marked when any kind of agent is there
-        # 0-th index marked when there is a wall
-        n = len(self.agents) # number of agents
-
-        res = np.array([])
-        for cell in encoded.reshape(-1, 3):
-            cell_onehot = np.zeros(n + 1)
-            if IDX_TO_OBJECT[cell[0]] == 'wall':
-                cell_onehot[0] = 1.0
-            elif cell[0] != 0:
-                cell_onehot[cell[2]] = 1.0
-            res = np.concatenate((res, cell_onehot))
-
-        return res
+            agent.update_obs(obs)
+            

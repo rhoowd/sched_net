@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding=utf8
 
+
 def config_env(_flags):
     flags = _flags
 
@@ -18,8 +19,9 @@ def config_env(_flags):
     flags.DEFINE_integer("map_size", 3, "Size of the map")
     flags.DEFINE_float("render_every", 1000, "Render the nth episode")
 
+
 def get_filename():
     import config
     FLAGS = config.flags.FLAGS
 
-    return "s-"+FLAGS.scenario+"-map-"+str(FLAGS.map_size)
+    return "s-"+FLAGS.scenario+"-map-"+str(FLAGS.map_size)+"-mv-"+str(FLAGS.moving_prey)+"-dg-"+str(FLAGS.obs_diagonal)

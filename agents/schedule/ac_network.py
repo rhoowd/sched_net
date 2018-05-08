@@ -23,13 +23,14 @@ FLAGS = config.flags.FLAGS
 gamma = FLAGS.df  # reward discount factor
 
 h_num = 64
+h_critic = FLAGS.h_critic
 h1_actor = h_num  # hidden layer 1 size for the actor
 h2_actor = h_num  # hidden layer 2 size for the actor
 h3_actor = h_num  # hidden layer 3 size for the actor
 
-h1_critic = h_num  # hidden layer 1 size for the critic
-h2_critic = h_num  # hidden layer 2 size for the critic
-h3_critic = h_num  # hidden layer 3 size for the critic
+h1_critic = h_critic  # hidden layer 1 size for the critic
+h2_critic = h_critic  # hidden layer 2 size for the critic
+h3_critic = h_critic  # hidden layer 3 size for the critic
 
 h1_scheduler = h_num  # hidden layer 1 size for the critic
 h2_scheduler = h_num  # hidden layer 2 size for the critic
@@ -78,9 +79,10 @@ class ActorNetwork:
         # actor loss function (mean Q-values under current policy with regularization)
         self.actor_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope)
 
+        # TODO: need to fix
         self.responsible = tf.multiply(self.actions, self.a_onehot)
 
-        log_prob = tf.log(1e-10+tf.reduce_sum(self.responsible, reduction_indices=1, keepdims=True))
+        log_prob = tf.log(1e-10+tf.reduce_sum(self.responsible, reduction_indices=1, keep_dims=True))
         entropy = -tf.reduce_sum(self.actions * tf.log(1e-10+self.actions), 1)
         # 1e-10 is added to avoid log(0) which causes nan value error
 
@@ -256,7 +258,7 @@ class SchedulerNetwork:
         # actor loss function (mean Q-values under current policy with regularization)
         self.actor_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='schedule')
         self.responsible = tf.multiply(self.schedule_policy[0], self.schedule_ph)  # =\pi (policy)
-        log_prob = tf.log(1e-10+tf.reduce_sum(self.responsible, reduction_indices=1, keepdims=True))
+        log_prob = tf.log(1e-10+tf.reduce_sum(self.responsible, reduction_indices=1, keep_dims=True))
         entropy = -tf.reduce_sum(self.schedule_policy[0] * tf.log(1e-10+self.schedule_policy[0]), 1)
         self.loss = tf.reduce_sum(-(tf.multiply(log_prob, self.td_errors) + 0.01 * entropy))
 

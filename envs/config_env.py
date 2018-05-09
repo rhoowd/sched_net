@@ -6,7 +6,7 @@ def config_env(_flags):
     flags = _flags
 
     # Scenario
-    flags.DEFINE_string("scenario", "predator_prey", "Scenario")
+    flags.DEFINE_string("scenario", "predator_prey_obs", "Scenario")
     flags.DEFINE_integer("n_predator", 2, "Number of predators")
     flags.DEFINE_integer("n_prey", 1, "Number of preys")
     flags.DEFINE_boolean("obs_diagonal", True, "Whether the agent can see in diagonal directions")

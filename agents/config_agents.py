@@ -35,7 +35,7 @@ def config_agent(_flags):
 
     # Basic setting for simulation
     flags.DEFINE_boolean("load_nn", False, "Load nn from file or not")
-    flags.DEFINE_string("nn_file", "results/nn/s", "The name of file for loading")
+    flags.DEFINE_string("nn_file", "", "The name of file for loading")
     flags.DEFINE_boolean("train", True, "Training or testing")
     flags.DEFINE_boolean("qtrace", False, "Use q trace")
     flags.DEFINE_boolean("kt", False, "Keyboard input test")

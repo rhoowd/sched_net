@@ -28,12 +28,16 @@ result.setLevel(logging.INFO)
 
 if flags.FLAGS.folder == "default":
     result_fh = logging.FileHandler("./results/eval/r-" + file_name + ".txt")
+    nn_filename = "./results/nn/n-" + file_name
 else:
     result_fh = logging.FileHandler("./results/eval/"+ flags.FLAGS.folder +"/r-" + file_name + ".txt")
+    nn_filename = "./results/nn/" + flags.FLAGS.folder + "/n-" + file_name
 
 result_fm = logging.Formatter('[%(filename)s:%(lineno)s] %(asctime)s\t%(message)s')
 result_fh.setFormatter(result_fm)
 result.addHandler(result_fh)
+
+
 
 # Used to map colors to integers
 COLOR_TO_IDX = {

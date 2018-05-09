@@ -1,19 +1,6 @@
 #!/usr/bin/env python
 # coding=utf8
 
-"""
-===========================================
- :mod:`qlearn` Q-Learning
-===========================================
-.. moduleauthor:: Daewoo Kim
-.. note:: note...
-
-설명
-=====
-
-Choose action based on q-learning algorithm
-python main.py --agent cdqn_fo --training_step 50000 --map_size 4 --scenario pursuit --lr 0.0001
-"""
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
@@ -108,6 +95,7 @@ class Trainer(object):
                     self.test(global_step)
                     break
 
+        self._predator_agent.save_nn(global_step)
         self._eval.summarize()
 
     def get_schedule(self, obs_n, global_step, type='schedule', train=True):

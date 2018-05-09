@@ -21,6 +21,9 @@ def config_env(_flags):
     flags.DEFINE_integer("map_size", 3, "Size of the map")
     flags.DEFINE_float("render_every", 1000, "Render the nth episode")
 
+    # GUI
+    flags.DEFINE_boolean("gui", False, "Activate GUI")
+
 
 def get_filename():
     import config

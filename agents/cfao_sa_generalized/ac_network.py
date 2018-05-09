@@ -70,7 +70,7 @@ class ActorNetwork:
 
         self.responsible = tf.multiply(self.actions, self.a_onehot)
 
-        log_prob = tf.log(tf.reduce_sum(self.responsible, reduction_indices=1, keepdims=True))
+        log_prob = tf.log(tf.reduce_sum(self.responsible, reduction_indices=1, keep_dims=True))
         entropy = -tf.reduce_sum(self.actions * tf.log(self.actions), 1)
 
         self.loss = tf.reduce_sum(-(tf.multiply(log_prob, self.td_errors) + 0.01 * entropy))

@@ -11,6 +11,7 @@ from agents.simple_agent import RandomAgent, StaticAgent
 from agents.evaluation import Evaluation
 import logging
 import config
+from envs.gui import canvas
 
 FLAGS = config.flags.FLAGS
 logger = logging.getLogger("Agent")
@@ -54,11 +55,17 @@ class Trainer(object):
 
         self.epsilon = 0.3
 
+        # For gui
+        if FLAGS.gui:
+            self.canvas = canvas.Canvas(self._n_predator, 1, FLAGS.map_size)
+            self.canvas.setup()
+
+
     def learn(self):
 
         global_step = 0
         episode_num = 0
-        print_flag = False
+        print_flag = True
 
         while global_step < training_step:
             episode_num += 1
@@ -66,8 +73,8 @@ class Trainer(object):
             obs_n = self._env.reset()
             state = self._env.get_info()[0]['state']
             total_reward = 0
-
-            while True:
+            done = False
+            while not done:
 
                 global_step += 1
                 step_in_ep += 1
@@ -79,6 +86,9 @@ class Trainer(object):
                 obs_n_next, reward_n, done_n, info_n = self._env.step(action_n)
                 state_next = info_n[0]['state']
 
+                if FLAGS.gui:
+                    self.canvas.draw(state_next * FLAGS.map_size, predator_schedule, "Hello")
+
                 done_single = sum(done_n) > 0
                 self.train_agents(state, obs_n, action_n, reward_n, state_next, obs_n_next, predator_schedule, done_single)
 
@@ -87,9 +97,11 @@ class Trainer(object):
                 total_reward += np.sum(reward_n)
 
                 if is_episode_done(done_n, global_step):
+                    if FLAGS.gui:
+                        self.canvas.draw(state_next * FLAGS.map_size, predator_schedule, "Hello", True)
                     if print_flag:
                         print("[train_ep %d]" % (episode_num),"\tstep:", global_step, "\tep_step:", step_in_ep, "\treward", total_reward)
-                    break
+                    done = True
 
                 if global_step % FLAGS.eval_step == 0:
                     self.test(global_step)
@@ -186,6 +198,10 @@ class Trainer(object):
                 obs_n_next, reward_n, done_n, info_n = self._env.step(action_n)
                 state_next = info_n[0]['state']
 
+                if FLAGS.gui:
+                    self.canvas.draw(state_next * FLAGS.map_size, predator_schedule, "Hello")
+
+
                 if test_flag:
                     aa = six.moves.input('>')
                     if aa == 'c':
@@ -198,6 +214,9 @@ class Trainer(object):
                 total_reward += np.sum(reward_n)
 
                 if is_episode_done(done_n, global_step, "test") or step_in_ep > FLAGS.max_step:
+                    if FLAGS.gui:
+                        self.canvas.draw(state_next * FLAGS.map_size, predator_schedule, "Hello", True)
+
                     break
 
         print("Test result: Average steps to capture: ", curr_ep, float(global_step)/episode_num)

@@ -54,11 +54,19 @@ class Canvas():
         self.display_surface = pygame.display.set_mode((edge_len_pix, edge_len_pix))
         pygame.display.set_caption("Predator Prey Simulator")
         self.movable_surface = pygame.Surface((edge_len_pix, edge_len_pix))
+        self.message_surface = pygame.Surface((edge_len_pix, 32), pygame.SRCALPHA)
+        self.message_surface = self.message_surface.convert_alpha()
+        self.done_surface = pygame.Surface((edge_len_pix, edge_len_pix), pygame.SRCALPHA)
+        self.done_surface = self.done_surface.convert_alpha()
         self.mx = self.movable_surface.get_width()
         self.my = self.movable_surface.get_height()
         self.done = False
 
         # --- Diplay screen resolution ---
+        # For displaying the message from the learning module
+        self.fs = 32
+        self.font = pygame.font.SysFont(pygame.font.get_default_font(), self.fs)
+        
         # Frame is fixed
         self.framex = edge_len_pix
         self.framey = edge_len_pix
@@ -202,6 +210,8 @@ class Canvas():
         # --- Fill background ---
         self.display_surface.fill(GREY)
         self.movable_surface.fill((255, 255, 255, 0))
+        self.message_surface.fill(GREY)
+        self.done_surface.fill((255, 255, 0, 128))
         self.btn_pause_surface.fill((0+self.button_press_reactor["pause"], 153, 76, 128))
         self.btn_play_surface.fill((0+self.button_press_reactor["play"], 153, 76, 128))
         self.btn_ff_surface.fill((0+self.button_press_reactor["ff"], 153, 76, 128))
@@ -274,6 +284,12 @@ class Canvas():
             self.guiObjectsList[i].y = positions[2*i+1]*self.locator + int(self.locator/2)
 
         # Mid-level blit
+
+        # Writing the message onto the message surface
+        self.text = str(msg)
+        self.label = self.font.render(self.text, True, (255, 255, 255))
+        self.message_surface.blit(self.label, (8, 4))
+
         # Draw the grid lines
         for i in range(self.map_size):
             pygame.draw.line(self.movable_surface, GREY, (i*self.locator, 0), (i*self.locator, edge_len_pix))
@@ -289,7 +305,16 @@ class Canvas():
                 self.movable_surface.blit(obj.surface, (int(self.framex/2 - obj.sx/2), int(self.framey/2 - obj.sy/2)))
 
         # Top-level blit
+
+        # Blitting the movable surface onto the display surface
         self.display_surface.blit(pygame.transform.scale(self.movable_surface, (int(self.wx), int(self.wy))), (int((self.framex - self.wx)/2 + self.sx), int((self.framey - self.wy)/2 + self.sy)))
+
+        # Blitting the message surface onto the display surface
+        self.display_surface.blit(self.message_surface, (0, 0))
+
+        if done:
+            self.display_surface.blit(self.done_surface, (0, 0))
+            sleep(1)
 
         # Re-draw buttons
         self.button("PAUSE", self.vmargin, self.framey - self.vmargin - self.button_size_px, self.button_size_px, self.button_size_px, (0, 255, 0, 128), GREEN, self.btn_pause_surface)

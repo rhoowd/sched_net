@@ -98,7 +98,7 @@ class Canvas():
         self.y_corrector = self.my/2
         self.cam_view_scaler = 2
 
-        self.button_value = -1
+        self.button_value = 2
         
     def setup(self):
 
@@ -314,7 +314,6 @@ class Canvas():
 
         if done:
             self.display_surface.blit(self.done_surface, (0, 0))
-            sleep(1)
 
         # Re-draw buttons
         self.button("PAUSE", self.vmargin, self.framey - self.vmargin - self.button_size_px, self.button_size_px, self.button_size_px, (0, 255, 0, 128), GREEN, self.btn_pause_surface)
@@ -323,8 +322,10 @@ class Canvas():
 
         pygame.display.update()
 
+
         if self.button_value == 1:
             sleep(0.5)
+
         elif self.button_value == 0:
             self.button_value = 3
             while self.button_value == 3:

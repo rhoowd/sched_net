@@ -42,6 +42,8 @@ class SchedulingAgent(object):
         tf.reset_default_graph()
         my_graph = tf.Graph()
 
+        print(state_dim, self._obs_dim_per_unit, self._obs_dim)
+
         with my_graph.as_default():
             self.sess = tf.Session(graph=my_graph, config=tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=True)))
             self._actor = ActorNetwork(self.sess, self._n_agent, self._obs_dim, self._action_dim_per_unit, self._name)

@@ -154,7 +154,7 @@ class Scenario(BaseScenario):
         return ret
 
     def get_pos_normal(self, agent, world):
-        y, x = agent.pos  # TODO: order has problem
+        x, y = agent.pos  # TODO: order has problem
         ret = np.array([x / (world.grid.width-1), y / (world.grid.height-1)])
         return ret
 
@@ -232,8 +232,8 @@ class Scenario(BaseScenario):
             encoded = world.grid.encode()[:, :, 2]
             state = np.zeros((len(world.agents), 2)) # n_agents * (x,y)
             for x, y in itertools.product(*map(range, (width, height))):
-                if encoded[x, y] != 0:
-                    state[encoded[x, y] - 1] = np.array([x/width, y/height])
+                if encoded[y, x] != 0:
+                    state[encoded[y, x] - 1] = np.array([x/width, y/height])
             return {'state': state.flatten()}
         else:
             return {'state': self.encode_grid_to_onehot(world, world.grid)}

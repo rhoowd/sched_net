@@ -27,7 +27,7 @@ def config_agent(_flags):
     flags.DEFINE_float("a_lr", 0.00001, "Learning rate")
     flags.DEFINE_float("tau", 0.05, "Learning rate")
     flags.DEFINE_boolean("use_action_in_critic", False, "Use guided samples")
-    flags.DEFINE_integer("h_critic", 64, "Width of hidden layer for critic")
+    flags.DEFINE_integer("h_critic", 32, "Width of hidden layer for critic")
 
     # Scheduling
     flags.DEFINE_float("s_lr", 0.0001, "Learning rate")

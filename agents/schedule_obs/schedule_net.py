@@ -9,12 +9,14 @@ recv_out_dim = 5
 
 action_dim = 5
 
-h_s_1 = h_s_2 = h_s_3 = 64
-h_r_1 = h_r_2 = h_r_3 = 64
-h_a_1 = h_a_2 = h_a_3 = 64
+h_num = 16
+
+h_s_1 = h_s_2 = h_s_3 = h_num
+h_r_1 = h_r_2 = h_r_3 = h_num
+h_a_1 = h_a_2 = h_a_3 = h_num
 
 # Flags
-flag_sender_share = False
+flag_sender_share = True
 flag_receiver_share = False
 
 

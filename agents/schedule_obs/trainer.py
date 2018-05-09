@@ -1,19 +1,6 @@
 #!/usr/bin/env python
 # coding=utf8
 
-"""
-===========================================
- :mod:`qlearn` Q-Learning
-===========================================
-.. moduleauthor:: Daewoo Kim
-.. note:: note...
-
-설명
-=====
-
-Choose action based on q-learning algorithm
-python main.py --agent cdqn_fo --training_step 50000 --map_size 4 --scenario pursuit --lr 0.0001
-"""
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
@@ -24,6 +11,7 @@ from agents.simple_agent import RandomAgent, StaticAgent
 from agents.evaluation import Evaluation
 import logging
 import config
+from envs.gui import canvas
 
 FLAGS = config.flags.FLAGS
 logger = logging.getLogger("Agent")
@@ -66,6 +54,11 @@ class Trainer(object):
 
         self.epsilon = 0.3
 
+        # For gui
+        if FLAGS.gui:
+            self.canvas = canvas.Canvas(self._n_predator, 1, FLAGS.map_size)
+            self.canvas.setup()
+
     def learn(self):
 
         global_step = 0
@@ -78,8 +71,8 @@ class Trainer(object):
             obs_n = self._env.reset()
             state = self._env.get_info()[0]['state']
             total_reward = 0
-
-            while True:
+            done = False
+            while not done:
 
                 global_step += 1
                 step_in_ep += 1
@@ -90,7 +83,10 @@ class Trainer(object):
                 obs_n_next, reward_n, done_n, info_n = self._env.step(action_n)
                 state_next = info_n[0]['state']
 
-                self.draw_obs(obs_n_next)
+                # self.print_obs(obs_n_next)
+
+                if FLAGS.gui:
+                    self.canvas.draw(state_next * FLAGS.map_size, predator_schedule, "Hello")
 
                 done_single = sum(done_n) > 0
                 self.train_agents(state, obs_n, action_n, reward_n, state_next, obs_n_next, predator_schedule, done_single)
@@ -100,9 +96,12 @@ class Trainer(object):
                 total_reward += np.sum(reward_n)
 
                 if is_episode_done(done_n, global_step):
+                    if FLAGS.gui:
+                        self.canvas.draw(state_next * FLAGS.map_size, predator_schedule, "Hello", True)
                     if print_flag:
-                        print("[train_ep %d]" % (episode_num),"\tstep:", global_step, "\tep_step:", step_in_ep, "\treward", total_reward)
-                    break
+                        print("[train_ep %d]" % (episode_num), "\tstep:", global_step, "\tep_step:", step_in_ep,
+                              "\treward", total_reward)
+                    done = True
 
                 if global_step % FLAGS.eval_step == 0:
                     self.test(global_step)
@@ -110,19 +109,23 @@ class Trainer(object):
 
         self._eval.summarize()
 
-    def draw_obs(self, obs_n):
+    def print_obs(self, obs_n):
 
         obs_map_size = FLAGS.obs_range * 2 + 1
         for o in obs_n:
-            o_x = o[2]
-            o_y = o[3]
+
+            o_x = int(o[3] * (obs_map_size-1))
+            o_y = int(o[4] * (obs_map_size-1))
             for i in range(obs_map_size):
                 for j in range(obs_map_size):
-                    print(0,end=" ")
+                    if i == o_x and j == o_y:
+                        print(1, end=" ")
+                    else:
+                        print(0, end=" ")
                 print("")
             print("")
 
-        print("")
+        print("________________\n")
 
         return 0
 
@@ -214,6 +217,9 @@ class Trainer(object):
                 obs_n_next, reward_n, done_n, info_n = self._env.step(action_n)
                 state_next = info_n[0]['state']
 
+                if FLAGS.gui:
+                    self.canvas.draw(state_next * FLAGS.map_size, predator_schedule, "Hello")
+
                 if test_flag:
                     aa = six.moves.input('>')
                     if aa == 'c':
@@ -226,6 +232,9 @@ class Trainer(object):
                 total_reward += np.sum(reward_n)
 
                 if is_episode_done(done_n, global_step, "test") or step_in_ep > FLAGS.max_step:
+                    if FLAGS.gui:
+                        self.canvas.draw(state_next * FLAGS.map_size, predator_schedule, "Hello", True)
+
                     break
 
         print("Test result: Average steps to capture: ", curr_ep, float(global_step)/episode_num)

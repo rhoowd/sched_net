@@ -29,7 +29,7 @@ class Prey(CoreAgent):
 class Predator(CoreAgent):
     def __init__(self):
         super(Predator, self).__init__('predator', 'blue')
-        self.obs_range = 1
+        self.obs_range = FLAGS.obs_range
 
 
 class Scenario(BaseScenario):

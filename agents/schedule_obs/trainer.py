@@ -53,7 +53,6 @@ class Trainer(object):
                                                state_dim=self._state_dim,
                                                obs_dim=self._agent_profile["predator"]["obs_dim"][0])
 
-        
         self._prey_agent = []
         if FLAGS.moving_prey:
             # randomly moving prey agent
@@ -91,7 +90,7 @@ class Trainer(object):
                 obs_n_next, reward_n, done_n, info_n = self._env.step(action_n)
                 state_next = info_n[0]['state']
 
-                # print(state_next * FLAGS.map_size, "\n")
+                self.draw_obs(obs_n_next)
 
                 done_single = sum(done_n) > 0
                 self.train_agents(state, obs_n, action_n, reward_n, state_next, obs_n_next, predator_schedule, done_single)
@@ -110,6 +109,22 @@ class Trainer(object):
                     break
 
         self._eval.summarize()
+
+    def draw_obs(self, obs_n):
+
+        obs_map_size = FLAGS.obs_range * 2 + 1
+        for o in obs_n:
+            o_x = o[2]
+            o_y = o[3]
+            for i in range(obs_map_size):
+                for j in range(obs_map_size):
+                    print(0,end=" ")
+                print("")
+            print("")
+
+        print("")
+
+        return 0
 
     def get_schedule(self, obs_n, global_step, type='schedule', train=True):
 

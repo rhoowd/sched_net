@@ -55,7 +55,7 @@ class guiPred():
         # Label the drone
         self.body_color = BLUE
         self.eye_color = RED
-        self.fs = 15 # font size
+        self.fs = 32 # font size
         self.font = pygame.font.SysFont(pygame.font.get_default_font(), self.fs)
         self.text = str(pred_id)
         self.label = self.font.render(self.text, True, BLACK)

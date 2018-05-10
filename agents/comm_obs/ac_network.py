@@ -4,6 +4,7 @@
 import numpy as np
 import tensorflow as tf
 import config
+from agents.comm_obs import comm
 
 FLAGS = config.flags.FLAGS
 
@@ -96,42 +97,12 @@ class ActorNetwork:
     def generate_actor_network(self, obs, trainable, share=False):
 
         obs_list = list()
-        actions = list()
-
         for i in range(self.n_agent):
             obs_list.append(obs[:, i * self.state_dim:(i + 1) * self.state_dim])
 
-        for i in range(self.n_agent):
-            if share:
-                i_actor = self.generate_inpep_actor_network(obs_list[i], trainable)
-            else:
-                with tf.variable_scope("iactor" + str(i)):
-                    i_actor = self.generate_inpep_actor_network(obs_list[i], trainable)
-            actions.append(i_actor)
-
-        return tf.concat(actions, axis=-1)
-
-    def generate_inpep_actor_network(self, obs, trainable=True):
-        hidden_1 = tf.layers.dense(obs, h_a_1, activation=tf.nn.relu,
-                                   kernel_initializer=tf.random_normal_initializer(0., .1),  # weights
-                                   bias_initializer=tf.constant_initializer(0.1),  # biases
-                                   use_bias=True, trainable=trainable, reuse=tf.AUTO_REUSE, name='ia_dense_1')
-        hidden_2 = tf.layers.dense(hidden_1, h_a_2, activation=tf.nn.relu,
-                                   kernel_initializer=tf.random_normal_initializer(0., .1),  # weights
-                                   bias_initializer=tf.constant_initializer(0.1),  # biases
-                                   use_bias=True, trainable=trainable, reuse=tf.AUTO_REUSE, name='ia_dense_2')
-
-        hidden_3 = tf.layers.dense(hidden_2, h_a_3, activation=tf.nn.relu,
-                                   kernel_initializer=tf.random_normal_initializer(0., .1),  # weights
-                                   bias_initializer=tf.constant_initializer(0.1),  # biases
-                                   use_bias=True, trainable=trainable, reuse=tf.AUTO_REUSE, name='ia_dense_3')
-
-        a = tf.layers.dense(hidden_3, self.action_dim, activation=tf.nn.softmax,
-                            kernel_initializer=tf.random_normal_initializer(0., .1),  # weights
-                            bias_initializer=tf.constant_initializer(0.1),  # biases
-                            trainable=trainable, name='ia_dense_4',
-                            use_bias=True)
-        return a
+        # ret = comm.generate_comm_network(obs_list, self.action_dim, self.n_agent)
+        ret = comm.generate_comm_network_0_schedule(obs_list, self.action_dim, self.n_agent)
+        return ret
 
     def action_for_state(self, state_ph):
         return self.sess.run(self.actions,

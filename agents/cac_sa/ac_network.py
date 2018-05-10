@@ -1,18 +1,6 @@
 #!/usr/bin/env python
 # coding=utf8
-"""
-Layer 2 -> 3
-lr_actor = 1e-5  # learning rate for the actor
-lr_critic = 1e-4  # learning rate for the critic
-training step: 10000
-df: 0.999
-flags.DEFINE_integer("b_size", 10000, "Size of the replay memory")
-flags.DEFINE_integer("m_size", 64, "Minibatch size")
-flags.DEFINE_integer("pre_train_step", 10, "during [m_size * pre_step] take random action")
-epsilon = 0.1
-epsilon_min = 0.01
 
-"""
 import numpy as np
 import tensorflow as tf
 import config
@@ -32,8 +20,8 @@ h1_critic = h_critic  # hidden layer 1 size for the critic
 h2_critic = h_critic  # hidden layer 2 size for the critic
 h3_critic = h_critic  # hidden layer 3 size for the critic
 
-lr_actor = 1e-6  # learning rate for the actor
-lr_critic = 1e-5  # learning rate for the critic
+lr_actor = 1e-5  # learning rate for the actor
+lr_critic = 1e-4  # learning rate for the critic
 lr_decay = 1  # learning rate decay (per episode)
 
 tau = 5e-2  # soft target update rate
@@ -42,9 +30,10 @@ np.set_printoptions(threshold=np.nan)
 
 
 class ActorNetwork:
-    def __init__(self, sess, state_dim, action_dim, nn_id=None):
+    def __init__(self, sess, n_agent, state_dim, action_dim, nn_id=None):
 
         self.sess = sess
+        self.n_agent = n_agent
         self.state_dim = state_dim
         self.action_dim = action_dim
 
@@ -56,8 +45,11 @@ class ActorNetwork:
         # placeholders
         self.state_ph = tf.placeholder(dtype=tf.float32, shape=[None, state_dim])
         self.next_state_ph = tf.placeholder(dtype=tf.float32, shape=[None, state_dim])
-        self.action_ph = tf.placeholder(dtype=tf.int32, shape=[None])
-        self.a_onehot = tf.one_hot(self.action_ph, self.action_dim, 1.0, 0.0)
+        # concat action space
+        self.action_ph = tf.placeholder(dtype=tf.int32, shape=[None, n_agent])
+        # self.action_ph = tf.placeholder(dtype=tf.float32, shape=[None])
+        self.a_onehot = tf.reshape(tf.one_hot(self.action_ph, self.action_dim, 1.0, 0.0), [-1, action_dim * n_agent])
+
         self.td_errors = tf.placeholder(dtype=tf.float32, shape=[None, 1])
 
         # indicators (go into target computation)
@@ -122,8 +114,16 @@ class ActorNetwork:
                                            trainable=trainable, name='dense_a4',
                                            use_bias=True)
 
-        actions = actions_unscaled
-        return actions
+        actions = []
+        for i in range(self.n_agent):
+            a = tf.layers.dense(hidden_3, self.action_dim, activation=tf.nn.softmax,
+                                kernel_initializer=tf.random_normal_initializer(0., .1),  # weights
+                                bias_initializer=tf.constant_initializer(0.1),  # biases
+                                trainable=trainable, name='dense_aa' + str(i),
+                                use_bias=True)
+            actions.append(a)
+
+        return tf.concat(actions, axis=-1)
 
     def action_for_state(self, state_ph):
         return self.sess.run(self.actions,
@@ -139,15 +139,21 @@ class ActorNetwork:
                                           self.action_ph: action_ph,
                                           self.td_errors: td_errors,
                                           self.is_training_ph: True})
+
     def training_target_actor(self):
         return self.sess.run(self.update_slow_targets_op_a,
                              feed_dict={self.is_training_ph: False})
 
+
 class CriticNetwork:
-    def __init__(self, sess, state_dim, action_dim, nn_id=None):
+    def __init__(self, sess, n_agent, state_dim, action_dim, nn_id=None):
 
         self.sess = sess
+        self.n_agent = n_agent
         self.state_dim = state_dim
+        self.action_dim = action_dim
+
+        print("action dim", action_dim)
 
         if nn_id == None:
             scope = 'critic'
@@ -156,14 +162,15 @@ class CriticNetwork:
 
         # placeholders
         self.state_ph = tf.placeholder(dtype=tf.float32, shape=[None, state_dim])
-        self.action_ph = tf.placeholder(dtype=tf.int32, shape=[None])
-        self.a_onehot = tf.one_hot(self.action_ph, action_dim, 1.0, 0.0)
- 
+        # concat action space
+        self.action_ph = tf.placeholder(dtype=tf.int32, shape=[None, n_agent])
+        self.a_onehot = tf.reshape(tf.one_hot(self.action_ph, self.action_dim, 1.0, 0.0), [-1, action_dim * n_agent])
+
         self.reward_ph = tf.placeholder(dtype=tf.float32, shape=[None])
 
         self.next_state_ph = tf.placeholder(dtype=tf.float32, shape=[None, state_dim])
-        self.st_action_ph = tf.placeholder(dtype=tf.int32, shape=[None])
-        self.sta_onehot = tf.one_hot(self.st_action_ph, action_dim, 1.0, 0.0)
+        self.st_action_ph = tf.placeholder(dtype=tf.int32, shape=[None, n_agent])
+        self.sta_onehot = tf.reshape(tf.one_hot(self.action_ph, self.action_dim, 1.0, 0.0), [-1, action_dim * n_agent])
 
         self.is_not_terminal_ph = tf.placeholder(dtype=tf.float32, shape=[None])  # indicators (go into target computation)
         self.is_training_ph = tf.placeholder(dtype=tf.bool, shape=())  # for dropout

@@ -31,6 +31,27 @@ class Predator(CoreAgent):
         super(Predator, self).__init__('predator', 'blue')
         self.obs_range = FLAGS.obs_range
 
+        self.last_obs_x = 0.5
+        self.last_obs_y = 0.5
+
+        self.obs_prey_before = False
+
+    def set_obs_prey(self, px, py):
+        self.last_obs_x = px
+        self.last_obs_y = py
+
+        self.obs_prey_before = True
+
+    def reset_obs_prey(self):
+        self.last_obs_x = 0.5
+        self.last_obs_y = 0.5
+        self.obs_prey_before = False
+
+    def get_obs_prey(self):
+        ret = [self.obs_prey_before, self.last_obs_x, self.last_obs_y]
+
+        return ret
+
 
 class Scenario(BaseScenario):
     def __init__(self):
@@ -77,6 +98,8 @@ class Scenario(BaseScenario):
         # randomly place agents
         for agent in world.agents:
             world.placeObj(agent)
+            if agent.itype == 'predator':
+                agent.reset_obs_prey()
         
         world.set_observations()
 
@@ -147,7 +170,14 @@ class Scenario(BaseScenario):
             ret.append(self.get_pos_normal(agent, world))
 
         if prey_flag:
-            ret.append(self.check_prey(agent, world))
+            c_prey = self.check_prey(agent, world)
+
+            if agent.itype == 'predator':
+                if c_prey[0] == 1:
+                    agent.set_obs_prey(c_prey[1], c_prey[2])
+
+                ret.append([c_prey[0]])
+                ret.append(agent.get_obs_prey())
 
         ret = np.concatenate(ret)
 

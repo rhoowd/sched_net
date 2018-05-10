@@ -1,22 +1,6 @@
 #!/usr/bin/env python
 # coding=utf8
 
-"""
-===========================================
- :mod:`cac` Centralized Actor-Critic
-===========================================
-.. moduleauthor:: Daewoo Kim
-.. note:: note...
-
-설명
-map 3 일때
- CDQN - 10
- Random - 80
- CAC - 20
-=====
-
-Choose action based on q-learning algorithm
-"""
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
@@ -24,9 +8,9 @@ import random
 import numpy as np
 import tensorflow as tf
 import sys
-from agents.cac_fo_generalized.replay_buffer import ReplayBuffer
-from agents.cac_fo_generalized.ac_network import ActorNetwork
-from agents.cac_fo_generalized.ac_network import CriticNetwork
+from agents.cac_sa.replay_buffer import ReplayBuffer
+from agents.cac_sa.ac_network import ActorNetwork
+from agents.cac_sa.ac_network import CriticNetwork
 from agents.evaluation import Evaluation
 
 import logging
@@ -38,19 +22,22 @@ result = logging.getLogger('Result')
 
 
 # centralized actor-critic agent guiding multiple predators with full observation
-class JointPredatorAgentFO(object):
+class SAPredatorAgentFO(object):
 
-    def __init__(self, n_agent, action_dim, obs_dim, name=""):
+    def __init__(self, n_agent, action_dim, state_dim, obs_dim, name=""):
         logger.info("Centralized Actor-Critic")
 
         self._n_agent = n_agent
+        self._state_dim = state_dim
         self._action_dim_per_unit = action_dim
         self._obs_dim_per_unit = obs_dim
 
-        # joint action space
-        self._action_dim = self._action_dim_per_unit ** self._n_agent
+        # concatenated action space for actor network
+        self._concat_action_dim = self._action_dim_per_unit * self._n_agent
+        self._joint_action_dim = self._action_dim_per_unit ** self._n_agent
+
         # fully-observable environment -> obs of all agents are identical
-        self._obs_dim = self._obs_dim_per_unit
+        self._obs_dim = self._obs_dim_per_unit * self._n_agent
 
         self._name = name
         self.update_cnt = 0
@@ -62,8 +49,8 @@ class JointPredatorAgentFO(object):
         with my_graph.as_default():
             self.sess = tf.Session(graph=my_graph, config=tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=True)))
 
-            self._actor = ActorNetwork(self.sess, self._obs_dim, self._action_dim, self._name)
-            self._critic = CriticNetwork(self.sess, self._obs_dim, self._action_dim, self._name)
+            self._actor = ActorNetwork(self.sess, self._n_agent, self._state_dim, self._action_dim_per_unit, self._name)
+            self._critic = CriticNetwork(self.sess, self._n_agent, self._state_dim, self._action_dim_per_unit, self._name)
 
             self.sess.run(tf.global_variables_initializer())
             self.saver = tf.train.Saver()
@@ -101,28 +88,30 @@ class JointPredatorAgentFO(object):
             r = a + r * self._action_dim_per_unit
         return r
 
-    def act(self, obs):
+    def act(self, state):
 
         # TODO just argmax when testing..
         # use obs_list in partially observable environment
 
-        action_prob = self._actor.action_for_state(obs.reshape(1, self._obs_dim))
+        action_prob_list = self._actor.action_for_state(state.reshape(1, self._state_dim))
 
-        if np.isnan(action_prob).any():
+        if np.isnan(action_prob_list).any():
             raise ValueError('action_prob contains NaN')
 
-        joint_action_index = np.random.choice(len(action_prob[0]), p=action_prob[0])
+        action_list = []
+        for action_prob in action_prob_list.reshape(self._n_agent, self._action_dim_per_unit):
+            action_list.append(np.random.choice(len(action_prob), p=action_prob))
 
-        return self.decompose_joint_action(joint_action_index)
+        return action_list
 
-    def train(self, obs, action_list, reward_list, obs_next, done):
+    def train(self, state, obs_list, action_list, reward_list, state_next, done):
 
         # use obs_list in partially observable environment
 
-        s = obs
-        a = self.compose_joint_action(action_list)
+        s = state
+        a = action_list
         r = np.sum(reward_list)
-        s_ = obs_next
+        s_ = state_next
 
         self.store_sample(s, a, r, s_, done)
         self.update_ac()
@@ -141,14 +130,8 @@ class JointPredatorAgentFO(object):
         minibatch = self.replay_buffer.sample_from_memory()
         s, a, r, s_, d = map(np.array, zip(*minibatch))
 
-        if FLAGS.use_action_in_critic:
-            a_ = self._actor.target_action_for_next_state(s_).argmax(axis=1)  # get actions for next state
-            td_error, _ = self._critic.training_critic(s, a, r, s_, a_, d)  # train critic
-            _ = self._actor.training_actor(s, a, td_error)  # train actor
-            _ = self._actor.training_target_actor()  # train slow target actor
-        else:
-            td_error, _ = self._critic.training_critic(s, a, r, s_, a, d)  # train critic
-            _ = self._actor.training_actor(s, a, td_error)  # train actor
+        td_error, _ = self._critic.training_critic(s, a, r, s_, a, d)  # train critic
+        _ = self._actor.training_actor(s, a, td_error)  # train actor
 
         _ = self._critic.training_target_critic()  # train slow target critic
 

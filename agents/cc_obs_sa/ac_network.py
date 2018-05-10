@@ -1,18 +1,6 @@
 #!/usr/bin/env python
 # coding=utf8
-"""
-Layer 2 -> 3
-lr_actor = 1e-5  # learning rate for the actor
-lr_critic = 1e-4  # learning rate for the critic
-training step: 10000
-df: 0.999
-flags.DEFINE_integer("b_size", 10000, "Size of the replay memory")
-flags.DEFINE_integer("m_size", 64, "Minibatch size")
-flags.DEFINE_integer("pre_train_step", 10, "during [m_size * pre_step] take random action")
-epsilon = 0.1
-epsilon_min = 0.01
 
-"""
 import numpy as np
 import tensorflow as tf
 import config
@@ -32,8 +20,8 @@ h1_critic = h_critic  # hidden layer 1 size for the critic
 h2_critic = h_critic  # hidden layer 2 size for the critic
 h3_critic = h_critic  # hidden layer 3 size for the critic
 
-lr_actor = 1e-6  # learning rate for the actor
-lr_critic = 1e-5  # learning rate for the critic
+lr_actor = 1e-5  # learning rate for the actor
+lr_critic = 1e-4  # learning rate for the critic
 lr_decay = 1  # learning rate decay (per episode)
 
 tau = 5e-2  # soft target update rate
@@ -42,9 +30,11 @@ np.set_printoptions(threshold=np.nan)
 
 
 class ActorNetwork:
-    def __init__(self, sess, state_dim, action_dim, nn_id=None):
+
+    def __init__(self, sess, n_agent, state_dim, action_dim, nn_id=None):
 
         self.sess = sess
+        self.n_agent = n_agent
         self.state_dim = state_dim
         self.action_dim = action_dim
 
@@ -56,8 +46,10 @@ class ActorNetwork:
         # placeholders
         self.state_ph = tf.placeholder(dtype=tf.float32, shape=[None, state_dim])
         self.next_state_ph = tf.placeholder(dtype=tf.float32, shape=[None, state_dim])
-        self.action_ph = tf.placeholder(dtype=tf.int32, shape=[None])
-        self.a_onehot = tf.one_hot(self.action_ph, self.action_dim, 1.0, 0.0)
+        # concat action space
+        self.action_ph = tf.placeholder(dtype=tf.int32, shape=[None, n_agent])
+        # self.action_ph = tf.placeholder(dtype=tf.float32, shape=[None])
+        self.a_onehot = tf.reshape(tf.one_hot(self.action_ph, self.action_dim, 1.0, 0.0), [-1, action_dim * n_agent])
         self.td_errors = tf.placeholder(dtype=tf.float32, shape=[None, 1])
 
         # indicators (go into target computation)
@@ -98,7 +90,6 @@ class ActorNetwork:
             update_slow_target_ops_a.append(update_slow_target_actor_op)
         self.update_slow_targets_op_a = tf.group(*update_slow_target_ops_a)
 
-
     # will use this to initialize both the actor network its slowly-changing target network with same structure
     def generate_actor_network(self, s, trainable):
         hidden = tf.layers.dense(s, h1_actor, activation=tf.nn.relu,
@@ -116,14 +107,16 @@ class ActorNetwork:
                                  bias_initializer=tf.constant_initializer(0.1),  # biases
                                  use_bias=True, trainable=trainable, name='dense_a3')
 
-        actions_unscaled = tf.layers.dense(hidden_3, self.action_dim, activation=tf.nn.softmax,
-                                           kernel_initializer=tf.random_normal_initializer(0., .1),    # weights
-                                           bias_initializer=tf.constant_initializer(0.1),  # biases
-                                           trainable=trainable, name='dense_a4',
-                                           use_bias=True)
+        actions = []
+        for i in range(self.n_agent):
+            a = tf.layers.dense(hidden_3, self.action_dim, activation=tf.nn.softmax,
+                                kernel_initializer=tf.random_normal_initializer(0., .1),  # weights
+                                bias_initializer=tf.constant_initializer(0.1),  # biases
+                                trainable=trainable, name='dense_aa' + str(i),
+                                use_bias=True)
+            actions.append(a)
 
-        actions = actions_unscaled
-        return actions
+        return tf.concat(actions, axis=-1)
 
     def action_for_state(self, state_ph):
         return self.sess.run(self.actions,
@@ -135,18 +128,21 @@ class ActorNetwork:
 
     def training_actor(self, state_ph, action_ph, td_errors):
         return self.sess.run(self.actor_train_op,
-                               feed_dict={self.state_ph: state_ph,
-                                          self.action_ph: action_ph,
-                                          self.td_errors: td_errors,
-                                          self.is_training_ph: True})
+                             feed_dict={self.state_ph: state_ph,
+                                        self.action_ph: action_ph,
+                                        self.td_errors: td_errors,
+                                        self.is_training_ph: True})
+
     def training_target_actor(self):
         return self.sess.run(self.update_slow_targets_op_a,
                              feed_dict={self.is_training_ph: False})
 
+
 class CriticNetwork:
-    def __init__(self, sess, state_dim, action_dim, nn_id=None):
+    def __init__(self, sess, n_agent, state_dim, nn_id=None):
 
         self.sess = sess
+        self.n_agent = n_agent
         self.state_dim = state_dim
 
         if nn_id == None:
@@ -156,26 +152,20 @@ class CriticNetwork:
 
         # placeholders
         self.state_ph = tf.placeholder(dtype=tf.float32, shape=[None, state_dim])
-        self.action_ph = tf.placeholder(dtype=tf.int32, shape=[None])
-        self.a_onehot = tf.one_hot(self.action_ph, action_dim, 1.0, 0.0)
- 
         self.reward_ph = tf.placeholder(dtype=tf.float32, shape=[None])
-
         self.next_state_ph = tf.placeholder(dtype=tf.float32, shape=[None, state_dim])
-        self.st_action_ph = tf.placeholder(dtype=tf.int32, shape=[None])
-        self.sta_onehot = tf.one_hot(self.st_action_ph, action_dim, 1.0, 0.0)
 
         self.is_not_terminal_ph = tf.placeholder(dtype=tf.float32, shape=[None])  # indicators (go into target computation)
         self.is_training_ph = tf.placeholder(dtype=tf.bool, shape=())  # for dropout
 
         with tf.variable_scope(scope):
             # Critic applied to state_ph
-            self.q_values = self.generate_critic_network(self.state_ph, self.a_onehot, trainable=True)
+            self.q_values = self.generate_critic_network(self.state_ph, trainable=True)
 
         # slow target critic network
         with tf.variable_scope('slow_target_'+scope):
             self.slow_q_values = tf.stop_gradient(
-                self.generate_critic_network(self.next_state_ph, self.sta_onehot, trainable=False))
+                self.generate_critic_network(self.next_state_ph, trainable=False))
 
         # One step TD targets y_i for (s,a) from experience replay
         # = r_i + gamma*Q_slow(s',mu_slow(s')) if s' is not terminal
@@ -200,11 +190,8 @@ class CriticNetwork:
         self.update_slow_targets_op_c = tf.group(*update_slow_target_ops_c)
 
     # will use this to initialize both the critic network its slowly-changing target network with same structure
-    def generate_critic_network(self, s, a, trainable):
-        if FLAGS.use_action_in_critic:
-          state_action = tf.concat([s, a], axis=1)
-        else:
-          state_action = s
+    def generate_critic_network(self, s, trainable):
+        state_action = s
 
         hidden = tf.layers.dense(state_action, h1_critic, activation=tf.nn.relu,
                                  kernel_initializer=tf.random_normal_initializer(0., .1),    # weights
@@ -212,29 +199,27 @@ class CriticNetwork:
                                  use_bias=True, trainable=trainable, name='dense_c1')
 
         hidden_2 = tf.layers.dense(hidden, h2_critic, activation=tf.nn.relu,
-                                 kernel_initializer=tf.random_normal_initializer(0., .1),    # weights
-                                 bias_initializer=tf.constant_initializer(0.1),  # biases
-                                 use_bias=True, trainable=trainable, name='dense_c2')
+                                   kernel_initializer=tf.random_normal_initializer(0., .1),    # weights
+                                   bias_initializer=tf.constant_initializer(0.1),  # biases
+                                   use_bias=True, trainable=trainable, name='dense_c2')
 
         hidden_3 = tf.layers.dense(hidden_2, h3_critic, activation=tf.nn.relu,
-                                 kernel_initializer=tf.random_normal_initializer(0., .1),    # weights
-                                 bias_initializer=tf.constant_initializer(0.1),  # biases
-                                 use_bias=True, trainable=trainable, name='dense_c3')
+                                   kernel_initializer=tf.random_normal_initializer(0., .1),    # weights
+                                   bias_initializer=tf.constant_initializer(0.1),  # biases
+                                   use_bias=True, trainable=trainable, name='dense_c3')
 
         q_values = tf.layers.dense(hidden_3, 1, trainable=trainable,
                                    kernel_initializer=tf.random_normal_initializer(0., .1),    # weights
                                    bias_initializer=tf.constant_initializer(0.1),  # biases
-                                   name='dense_c4',use_bias=False)
+                                   name='dense_c4', use_bias=False)
         return q_values
 
-    def training_critic(self, state_ph, action_ph, reward_ph, next_state_ph, st_action_ph, is_not_terminal_ph):
+    def training_critic(self, state_ph, reward_ph, next_state_ph, is_not_terminal_ph):
 
         return self.sess.run([self.td_errors, self.critic_train_op],
                              feed_dict={self.state_ph: state_ph,
-                                        self.action_ph: action_ph,
                                         self.reward_ph: reward_ph,
                                         self.next_state_ph: next_state_ph,
-                                        self.st_action_ph: st_action_ph,
                                         self.is_not_terminal_ph: is_not_terminal_ph,
                                         self.is_training_ph: True})
 
@@ -242,9 +227,9 @@ class CriticNetwork:
         return self.sess.run(self.update_slow_targets_op_c,
                              feed_dict={self.is_training_ph: False})
 
-    def get_critic_q(self, state_ph, action_ph):
-
-        return self.sess.run([self.q_values],
-                             feed_dict={self.state_ph: state_ph,
-                                        self.action_ph: action_ph,
-                                        self.is_training_ph: True})
+    # def get_critic_q(self, state_ph, action_ph):
+    #
+    #     return self.sess.run([self.q_values],
+    #                          feed_dict={self.state_ph: state_ph,
+    #                                     self.action_ph: action_ph,
+    #                                     self.is_training_ph: True})

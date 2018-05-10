@@ -29,4 +29,4 @@ def get_filename():
     import config
     FLAGS = config.flags.FLAGS
 
-    return "s-"+FLAGS.scenario+"-map-"+str(FLAGS.map_size)+"-mv-"+str(FLAGS.moving_prey)+"-dg-"+str(FLAGS.obs_diagonal)
+    return "s-"+FLAGS.scenario+"-map-"+str(FLAGS.map_size)+"-or-"+str(FLAGS.obs_range)

@@ -107,6 +107,7 @@ class Trainer(object):
                     self.test(global_step)
                     break
 
+        self._predator_agent.save_nn(global_step)
         self._eval.summarize()
 
     def print_obs(self, obs_n):

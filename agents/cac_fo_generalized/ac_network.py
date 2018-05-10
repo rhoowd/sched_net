@@ -21,13 +21,16 @@ FLAGS = config.flags.FLAGS
 
 gamma = FLAGS.df  # reward discount factor
 
-h1_actor = 64  # hidden layer 1 size for the actor
-h2_actor = 64  # hidden layer 2 size for the actor
-h3_actor = 64  # hidden layer 3 size for the actor
+h_actor = 64
+h_critic = 64
 
-h1_critic = 64  # hidden layer 1 size for the critic
-h2_critic = 64  # hidden layer 2 size for the critic
-h3_critic = 64  # hidden layer 3 size for the critic
+h1_actor = h_actor  # hidden layer 1 size for the actor
+h2_actor = h_actor  # hidden layer 2 size for the actor
+h3_actor = h_actor  # hidden layer 3 size for the actor
+
+h1_critic = h_critic  # hidden layer 1 size for the critic
+h2_critic = h_critic  # hidden layer 2 size for the critic
+h3_critic = h_critic  # hidden layer 3 size for the critic
 
 lr_actor = 1e-5  # learning rate for the actor
 lr_critic = 1e-4  # learning rate for the critic

@@ -8,6 +8,7 @@ from agents.simple_agent import RandomAgent
 from agents.evaluation import Evaluation
 import logging
 import config
+from envs.gui import canvas
 
 FLAGS = config.flags.FLAGS
 logger = logging.getLogger("Agent")
@@ -29,6 +30,8 @@ class Trainer(object):
         self._eval = Evaluation()
         self._agent_profile = self._env.get_agent_profile()
         self._state_dim = self._env.get_info()[0]['state'].shape[0]
+        self._n_predator = self._agent_profile['predator']['n_agent']
+
 
         # joint CAC predator agent
         self._predator_agent = JointPredatorAgentFO(n_agent=self._agent_profile['predator']['n_agent'],
@@ -39,13 +42,18 @@ class Trainer(object):
         for _ in range(self._agent_profile['prey']['n_agent']):
             self._prey_agent.append(RandomAgent(5))
 
-        self.epsilon = 0.3
+        self.epsilon = 0.5
+
+        # For gui
+        if FLAGS.gui:
+            self.canvas = canvas.Canvas(self._n_predator, 1, FLAGS.map_size)
+            self.canvas.setup()
 
     def learn(self):
 
         global_step = 0
         episode_num = 0
-        print_flag = True
+        print_flag = False
 
         while global_step < training_step:
             episode_num += 1
@@ -54,41 +62,46 @@ class Trainer(object):
             state = self._env.get_info()[0]['state']
             total_reward = 0
 
-            while True:
+            done = False
+            while not done:
                 global_step += 1
                 step_in_ep += 1
 
-                # action_n = self.get_action(obs_n, global_step)
                 action_n = self.get_action(state, global_step)
 
                 _, reward_n, done_n, info_n = self._env.step(action_n) # obs_n_next
                 state_next = info_n[0]['state']
 
+                # if FLAGS.gui:
+                #     self.canvas.draw(state_next * FLAGS.map_size, [0]*self._n_predator, "Hello")
+
                 done_single = sum(done_n) > 0
-                # self.train_agents(obs_n, action_n, reward_n, obs_n_next, done_single)
                 self.train_agents(state, action_n, reward_n, state_next, done_single)
 
-                # obs_n = obs_n_next
                 state = state_next
-                # for i, cell in enumerate(state.reshape(FLAGS.map_size**2, 1 + FLAGS.n_predator + FLAGS.n_prey)):
-                #     if max(cell) == 0:
-                #         print('-', end=' ')
-                #     else:
-                #         print(np.argmax(cell), end=' ')
-                #     if i % FLAGS.map_size == FLAGS.map_size - 1:
-                #         print()
-                # print()
                 total_reward += np.sum(reward_n)
 
                 if is_episode_done(done_n, global_step):
+                    # if FLAGS.gui:
+                    #     self.canvas.draw(state_next * FLAGS.map_size, [0]*self._n_predator, "Hello", True)
                     if print_flag:
                         print("[train_ep %d]" % (episode_num),"\tstep:", global_step, "\tstep_per_ep:", step_in_ep, "\treward", total_reward)
+                    done = True
+
+                if global_step % FLAGS.eval_step == 0:
+                    self.test(global_step)
                     break
 
-            if episode_num % FLAGS.eval_step == 0:
-                self.test(episode_num)
-
+        self._predator_agent.save_nn(global_step)
         self._eval.summarize()
+
+    def check_obs(self, obs):
+
+        check_list = []
+        for i in range(FLAGS.n_predator):
+            check_list.append(obs[i][2])
+
+        return np.array(check_list)
 
     def get_action(self, state, global_step, train=True):
         act_n = [0] * (self._agent_profile['predator']['n_agent'] +
@@ -100,9 +113,6 @@ class Trainer(object):
             # exploration of centralized predator agent
             predator_action = self._predator_agent.explore()
         else:
-            # exploitation of centralized predator agent
-            #predator_obs = [obs_n[i] for i in self._agent_profile['predator']['idx']]
-            #predator_action = self._predator_agent.act(predator_obs)
             predator_action = self._predator_agent.act(state)
 
         for i, idx in enumerate(self._agent_profile['predator']['idx']):
@@ -129,15 +139,17 @@ class Trainer(object):
         episode_num = 0
 
         test_flag = FLAGS.kt
+        total_reward = 0
+        obs_cnt = np.zeros(self._n_predator)
 
         while global_step < testing_step:
             episode_num += 1
             step_in_ep = 0
             obs_n = self._env.reset()
             state = self._env.get_info()[0]['state']
+
             if test_flag:
                 print("\nInit\n", obs_n[0])
-            total_reward = 0
 
             while True:
 
@@ -147,7 +159,12 @@ class Trainer(object):
                 action_n = self.get_action(state, global_step, False)
                 obs_n_next, reward_n, done_n, info_n = self._env.step(action_n)
                 state_next = info_n[0]['state']
-                
+
+                obs_cnt += self.check_obs(obs_n_next)
+
+                if FLAGS.gui:
+                    self.canvas.draw(state_next * FLAGS.map_size, [0]*self._n_predator, "Hello")
+
                 if test_flag:
                     aa = six.moves.input('>')
                     if aa == 'c':
@@ -160,9 +177,12 @@ class Trainer(object):
                 total_reward += np.sum(reward_n)
 
                 if is_episode_done(done_n, global_step, "test") or step_in_ep > FLAGS.max_step:
+                    if FLAGS.gui:
+                        self.canvas.draw(state_next * FLAGS.map_size, [0]*self._n_predator, "Hello", True)
                     break
 
-        print("Test result: Average steps to capture: ", curr_ep, float(global_step)/episode_num)
+        print("Test result: Average steps to capture: ", curr_ep, float(global_step) / episode_num,
+              "\t", float(total_reward) / episode_num, obs_cnt / episode_num)
         self._eval.update_value("test_result", float(global_step)/episode_num, curr_ep)
 
 

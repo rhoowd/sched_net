@@ -92,7 +92,7 @@ class Scenario(BaseScenario):
                     pred = world.agents[i]
                     check = self.check_prey(pred, world)[0]
                     if check == 0.0:
-                        reward -= 0.01
+                        reward -= 0.1
                 if reward == 0.0:
                     self.prey_captured = True
                     return 1

@@ -52,11 +52,21 @@ class SchedulingAgent(object):
             self._scheduler = SchedulerNetwork(self.sess, self._n_agent, self._obs_dim)
 
             self.sess.run(tf.global_variables_initializer())
+            self.saver = tf.train.Saver()
+
+            if FLAGS.load_nn:
+                if FLAGS.nn_file == "":
+                    logger.error("No file for loading Neural Network parameter")
+                    exit()
+                self.saver.restore(self.sess, FLAGS.nn_file)
 
         self.replay_buffer = ReplayBuffer()
 
         self._eval = Evaluation()
         self.q_prev = None
+
+    def save_nn(self, global_step):
+        self.saver.save(self.sess, config.nn_filename, global_step)
 
     def explore(self):
         return [random.randrange(self._action_dim_per_unit)

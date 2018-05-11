@@ -10,21 +10,15 @@ FLAGS = config.flags.FLAGS
 
 gamma = FLAGS.df  # reward discount factor
 
-h_actor = 64
-h_critic = 64
 
-h1_actor = h_actor  # hidden layer 1 size for the actor
-h2_actor = h_actor  # hidden layer 2 size for the actor
-h3_actor = h_actor  # hidden layer 3 size for the actor
-
-h_a_1 = h_a_2 = h_a_3 = 32
+h_critic = FLAGS.h_critic
 
 h1_critic = h_critic  # hidden layer 1 size for the critic
 h2_critic = h_critic  # hidden layer 2 size for the critic
 h3_critic = h_critic  # hidden layer 3 size for the critic
 
-lr_actor = 1e-5  # learning rate for the actor
-lr_critic = 1e-4  # learning rate for the critic
+lr_actor = FLAGS.a_lr   # learning rate for the actor
+lr_critic = FLAGS.c_lr  # learning rate for the critic
 lr_decay = 1  # learning rate decay (per episode)
 
 tau = 5e-2  # soft target update rate
@@ -34,11 +28,11 @@ np.set_printoptions(threshold=np.nan)
 
 class ActorNetwork:
 
-    def __init__(self, sess, n_agent, state_dim, action_dim, nn_id=None):
+    def __init__(self, sess, n_agent, obs_dim_per_unit, action_dim, nn_id=None):
 
         self.sess = sess
         self.n_agent = n_agent
-        self.state_dim = state_dim
+        self.obs_dim_per_unit = obs_dim_per_unit
         self.action_dim = action_dim
 
         if nn_id == None:
@@ -47,8 +41,8 @@ class ActorNetwork:
             scope = 'actor_' + str(nn_id)
 
         # placeholders
-        self.state_ph = tf.placeholder(dtype=tf.float32, shape=[None, state_dim])
-        self.next_state_ph = tf.placeholder(dtype=tf.float32, shape=[None, state_dim])
+        self.state_ph = tf.placeholder(dtype=tf.float32, shape=[None, obs_dim_per_unit*n_agent])
+        self.next_state_ph = tf.placeholder(dtype=tf.float32, shape=[None, obs_dim_per_unit*n_agent])
         # concat action space
         self.action_ph = tf.placeholder(dtype=tf.int32, shape=[None, n_agent])
         # self.action_ph = tf.placeholder(dtype=tf.float32, shape=[None])
@@ -98,10 +92,11 @@ class ActorNetwork:
 
         obs_list = list()
         for i in range(self.n_agent):
-            obs_list.append(obs[:, i * self.state_dim:(i + 1) * self.state_dim])
+            obs_list.append(obs[:, i * self.obs_dim_per_unit:(i + 1) * self.obs_dim_per_unit])
 
-        # ret = comm.generate_comm_network(obs_list, self.action_dim, self.n_agent)
-        ret = comm.generate_comm_network_0_schedule(obs_list, self.action_dim, self.n_agent)
+        ret = comm.generate_comm_network(obs_list, self.action_dim, self.n_agent)
+        # ret = comm.generate_comm_network_0_schedule(obs_list, self.action_dim, self.n_agent)
+        # ret = comm.generate_actor_network(obs_list, self.action_dim, self.n_agent)
         return ret
 
     def action_for_state(self, state_ph):

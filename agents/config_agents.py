@@ -24,15 +24,11 @@ def config_agent(_flags):
     flags.DEFINE_integer("pre_train_step", 10, "during [m_size * pre_step] take random action")
 
     # Actor Critic
-    flags.DEFINE_float("c_lr", 0.0001, "Learning rate")
     flags.DEFINE_float("a_lr", 0.00001, "Learning rate")
+    flags.DEFINE_float("c_lr", 0.0001, "Learning rate")
     flags.DEFINE_float("tau", 0.05, "Learning rate")
     flags.DEFINE_boolean("use_action_in_critic", False, "Use guided samples")
-    flags.DEFINE_integer("h_critic", 32, "Width of hidden layer for critic")
-
-    # Scheduling
-    flags.DEFINE_float("s_lr", 0.0001, "Learning rate")
-    flags.DEFINE_string("schedule", 'schedule', "Scheduing type: schedule, random, connect, disconnect")
+    flags.DEFINE_integer("h_critic", 64, "Width of hidden layer for critic")
 
     # Basic setting for simulation
     flags.DEFINE_boolean("load_nn", False, "Load nn from file or not")
@@ -41,11 +37,16 @@ def config_agent(_flags):
     flags.DEFINE_boolean("qtrace", False, "Use q trace")
     flags.DEFINE_boolean("kt", False, "Keyboard input test")
 
+    flags.DEFINE_integer("comm", 0, "Communication type")
+    flags.DEFINE_integer("capa", 2, "Capacity for comm")
+    flags.DEFINE_boolean("e_share", False, "Share encoder")
+    flags.DEFINE_boolean("s_share", False, "Share sender")
 
 def get_filename():
     import config
     FLAGS = config.flags.FLAGS
 
     # return "a-" + FLAGS.agent + "-lr-" + str(FLAGS.lr) + "-ms-" + str(FLAGS.m_size)
-    return "a-" + FLAGS.agent + "-sc-" + str(FLAGS.schedule) + "-clr-" + str(FLAGS.c_lr) + "-alr-" + str(
-        FLAGS.a_lr) + "-slr-" + str(FLAGS.s_lr) + "-ms-" + str(FLAGS.m_size)+ "-hc-" + str(FLAGS.h_critic)
+    return "a-" + FLAGS.agent + "-clr-" + str(FLAGS.c_lr) + "-alr-" + str(FLAGS.a_lr) \
+           + "-ms-" + str(FLAGS.m_size) + "-hc-" + str(FLAGS.h_critic) + "-co-" + str(FLAGS.comm) \
+           + "-cp-" + str(FLAGS.capa) + "-ss-" + str(FLAGS.s_share) + "-es-" + str(FLAGS.e_share)

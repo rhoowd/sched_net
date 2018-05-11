@@ -16,6 +16,7 @@ if __name__ == '__main__':
     for i in range(1, num_file+1):
         filename.append(sys.argv[i])
 
+    leg_list = []
     for i in range(num_file):
 
         x = []
@@ -26,6 +27,7 @@ if __name__ == '__main__':
         cnt_avg = 0
         f = open(filename[i])
         r_sum = 0
+
         for line in f:
 
             try:
@@ -38,9 +40,11 @@ if __name__ == '__main__':
             except:
                 a = 1
 
-        plt.plot(x, y)
+        leg, = plt.plot(x, y, label=filename[i].split('/')[0])
         plt.fill_between(x, lb, ub, alpha=0.4)
+        leg_list.append(leg)
 
+    plt.legend(handles=leg_list)
     plt.xlabel('Training step', fontsize=16)
     plt.ylabel('Step to capture', fontsize=16)
     plt.grid(True)

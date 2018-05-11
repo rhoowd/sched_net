@@ -163,8 +163,6 @@ class Scenario(BaseScenario):
 
         ret = np.concatenate(ret)
 
-        print(ret)
-
         return ret
 
     def obs_predator(self, agent, world):
@@ -178,7 +176,7 @@ class Scenario(BaseScenario):
                 if idx in [world.agents[i].id for i in self.atype_to_idx['predator']]:
                     obs_pred = 1.0
             obs = np.concatenate([obs, [obs_pred]])
-        print(obs)
+
         return obs
 
 

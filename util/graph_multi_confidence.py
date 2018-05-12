@@ -12,6 +12,7 @@ if __name__ == '__main__':
 
     num_file = len(sys.argv)-1
     filename = []
+    y_lim = 200
 
     for i in range(1, num_file+1):
         filename.append(sys.argv[i])
@@ -48,8 +49,8 @@ if __name__ == '__main__':
     plt.xlabel('Training step', fontsize=16)
     plt.ylabel('Step to capture', fontsize=16)
     plt.grid(True)
-    # plt.ylim(0, 40)
-    # plt.xlim(0, 40)
+    plt.ylim(0, y_lim)
+    plt.xlim(0, 22)
     # plt.show()
 
-    plt.savefig("plot_conf.pdf")
+    plt.savefig("plot_conf_"+str(y_lim)+".pdf")

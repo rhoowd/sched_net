@@ -72,13 +72,14 @@ class PredatorAgentIndActor(object):
         return [random.randrange(self._action_dim_per_unit)
                 for _ in range(self._n_agent)]
 
-    def act(self, obs_list):
+    def act(self, obs_list, schedule_list):
 
         # TODO just argmax when testing..
         # use obs_list in partially observable environment
 
         action_prob_list = self._actor.action_for_state(np.concatenate(obs_list)
-                                                          .reshape(1, self._obs_dim))
+                                                          .reshape(1, self._obs_dim),
+                                                        schedule_list.reshape(1, self._n_agent))
 
         if np.isnan(action_prob_list).any():
             raise ValueError('action_prob contains NaN')
@@ -89,7 +90,7 @@ class PredatorAgentIndActor(object):
 
         return action_list
 
-    def train(self, state, obs_list, action_list, reward_list, state_next, done):
+    def train(self, state, obs_list, action_list, reward_list, state_next, schedule_n, done):
 
         # use obs_list in partially observable environment
 
@@ -98,14 +99,15 @@ class PredatorAgentIndActor(object):
         a = action_list
         r = np.sum(reward_list)
         s_ = state_next
+        c = schedule_n
 
-        self.store_sample(s, o, a, r, s_, done)
+        self.store_sample(s, o, a, r, s_, c, done)
         self.update_ac()
         return 0
 
-    def store_sample(self, s, o, a, r, s_, done):
+    def store_sample(self, s, o, a, r, s_, c, done):
 
-        self.replay_buffer.add_to_memory((s, o, a, r, s_, done))
+        self.replay_buffer.add_to_memory((s, o, a, r, s_, c, done))
         return 0
 
     def update_ac(self):
@@ -114,11 +116,11 @@ class PredatorAgentIndActor(object):
             return 0
 
         minibatch = self.replay_buffer.sample_from_memory()
-        s, o, a, r, s_, d = map(np.array, zip(*minibatch))
+        s, o, a, r, s_, c, d = map(np.array, zip(*minibatch))
         o = np.reshape(o, [-1, self._obs_dim])
 
         td_error, _ = self._critic.training_critic(s, r, s_, d)  # train critic
-        _ = self._actor.training_actor(o, a, td_error)  # train actor
+        _ = self._actor.training_actor(o, a, c, td_error)  # train actor
 
         _ = self._critic.training_target_critic()  # train slow target critic
 

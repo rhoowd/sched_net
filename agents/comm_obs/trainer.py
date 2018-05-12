@@ -67,18 +67,17 @@ class Trainer(object):
                 global_step += 1
                 step_in_ep += 1
 
-                action_n = self.get_action(obs_n, global_step)
+                schedule_n = self.get_schedule(obs_n, global_step, FLAGS.sched)
+                action_n = self.get_action(obs_n, schedule_n, global_step)
 
                 obs_n_next, reward_n, done_n, info_n = self._env.step(action_n) # obs_n_next
                 state_next = info_n[0]['state']
-
-                # self.print_obs(obs_n)
 
                 # if FLAGS.gui:
                 #     self.canvas.draw(state_next * FLAGS.map_size, [0]*self._n_predator, "Hello")
 
                 done_single = sum(done_n) > 0
-                self.train_agents(state, obs_n, action_n, reward_n, state_next, obs_n_next, done_single)
+                self.train_agents(state, obs_n, action_n, reward_n, state_next, obs_n_next, schedule_n, done_single)
 
                 obs_n = obs_n_next
                 state = state_next
@@ -111,7 +110,7 @@ class Trainer(object):
 
         return np.array(check_list)
 
-    def get_action(self, obs_n, global_step, train=True):
+    def get_action(self, obs_n, schedule_n, global_step, train=True):
         act_n = [0] * len(obs_n)
         self.epsilon = max(self.epsilon - epsilon_dec, epsilon_min)
 
@@ -121,7 +120,7 @@ class Trainer(object):
             predator_action = self._predator_agent.explore()
         else:
             predator_obs = [obs_n[i] for i in self._agent_profile['predator']['idx']]
-            predator_action = self._predator_agent.act(predator_obs)
+            predator_action = self._predator_agent.act(predator_obs, schedule_n)
 
         for i, idx in enumerate(self._agent_profile['predator']['idx']):
             act_n[idx] = predator_action[i]
@@ -132,14 +131,49 @@ class Trainer(object):
 
         return np.array(act_n, dtype=np.int32)
 
-    def train_agents(self, state, obs_n, action_n, reward_n, state_next, obs_n_next, done):
+    def get_schedule(self, obs_n, global_step, type, train=True):
+
+        predator_obs = [obs_n[i] for i in self._agent_profile['predator']['idx']]
+
+        # TODO generalize for the number of senders
+        if type == 'connect':
+            ret = np.full(self._n_predator, 1.0)
+        elif type == 'disconnect':
+            ret = np.full(self._n_predator, 0.0)
+        elif type == 'random':
+            ret = np.random.choice([1.0, 0.0], self._n_predator)
+        elif type == 'random_one':
+            i = np.random.choice(range(self._n_predator), 1)
+            ret = np.full(self._n_predator, 0.0)
+            ret[i] = 1.0
+        elif type == 'one':
+            ret = np.full(self._n_predator, 0.0)
+            ret[0] = 1.0
+        elif type == "round_robin":
+            ret = np.full(self._n_predator, 0.0)
+            ret[global_step % self._n_predator] = 1.0
+            return ret
+        elif type == 'schedule':
+            if train and (global_step < FLAGS.m_size * FLAGS.pre_train_step or np.random.rand() < self.epsilon):
+                i = np.random.choice(range(self._n_predator), 1)
+                ret = np.full(self._n_predator, 0.0)
+                ret[i] = 1.0
+                return ret
+            else:
+                ret = self._predator_agent.schedule(predator_obs)
+        else:
+            ret = None
+
+        return ret
+
+    def train_agents(self, state, obs_n, action_n, reward_n, state_next, obs_n_next, schedule_n, done):
         # train predator only
         predator_obs = [obs_n[i] for i in self._agent_profile['predator']['idx']]
         predator_action = [action_n[i] for i in self._agent_profile['predator']['idx']]
         predator_reward = [reward_n[i] for i in self._agent_profile['predator']['idx']]
         _ = [obs_n_next[i] for i in self._agent_profile['predator']['idx']]
         self._predator_agent.train(state, predator_obs, predator_action, predator_reward,
-                                   state_next, done)
+                                   state_next, schedule_n, done)
 
     def test(self, curr_ep=None):
 
@@ -164,7 +198,8 @@ class Trainer(object):
                 global_step += 1
                 step_in_ep += 1
 
-                action_n = self.get_action(obs_n, global_step, False)
+                schedule_n = self.get_schedule(obs_n, global_step, FLAGS.sched)
+                action_n = self.get_action(obs_n, schedule_n, global_step, False)
                 obs_n_next, reward_n, done_n, info_n = self._env.step(action_n)
                 state_next = info_n[0]['state']
 

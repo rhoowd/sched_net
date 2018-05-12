@@ -41,6 +41,7 @@ def config_agent(_flags):
     flags.DEFINE_integer("capa", 2, "Capacity for comm")
     flags.DEFINE_boolean("e_share", False, "Share encoder")
     flags.DEFINE_boolean("s_share", False, "Share sender")
+    flags.DEFINE_integer("s_num", 1, "Number of agent for sheduling")
 
 def get_filename():
     import config

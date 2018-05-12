@@ -48,7 +48,8 @@ if __name__ == '__main__':
     plt.xlabel('Training step', fontsize=16)
     plt.ylabel('Step to capture', fontsize=16)
     plt.grid(True)
-
+    plt.ylim(0, 200)
+    # plt.xlim(0,90)
     # plt.show()
 
     plt.savefig("plot_conf.pdf")

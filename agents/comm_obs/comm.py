@@ -30,8 +30,7 @@ def generate_comm_network(obs_list, action_dim, n_agent, trainable=True, share=F
 
             actions.append(agent_actor)
 
-    elif FLAGS.comm in [2]:
-
+    elif FLAGS.comm in [2]:  # Full connection
         # Generate encoder
         encoder_scope = "encoder"
         capacity = FLAGS.capa
@@ -55,10 +54,37 @@ def generate_comm_network(obs_list, action_dim, n_agent, trainable=True, share=F
 
             actions.append(agent_actor)
 
+    elif FLAGS.comm in [3]:  # Limited Connection (fixed k agent can communicate)
+        # Generate encoder
+        encoder_scope = "encoder"
+        capacity = FLAGS.capa
+        encoder_list = list()
+        n_schedule_agent = FLAGS.s_num
+        for i in range(n_schedule_agent):
+            if not FLAGS.e_share:
+                encoder_scope = "encoder" + str(i)
+
+            with tf.variable_scope(encoder_scope):
+                encoder = encoder_network(obs_list[i], capacity, 32, 1)
+            encoder_list.append(encoder)
+        encoders = tf.concat(encoder_list, axis=1)
+
+        # Generate actor
+        scope = "comm"
+        for i in range(n_agent):
+            if not FLAGS.s_share:
+                scope = "comm" + str(i)
+
+            with tf.variable_scope(scope):
+                agent_actor = comm_encoded_obs(obs_list[i], encoders, action_dim, h_num, trainable)
+
+            actions.append(agent_actor)
+
     return tf.concat(actions, axis=-1)
 
 
 def disconnected_actor(obs, action_dim, h_num, trainable=True):
+    print("disconnect", obs)
     hidden_1 = tf.layers.dense(obs, h_num, activation=tf.nn.relu,
                                kernel_initializer=tf.random_normal_initializer(0., .1),  # weights
                                bias_initializer=tf.constant_initializer(0.1),  # biases
@@ -83,6 +109,8 @@ def disconnected_actor(obs, action_dim, h_num, trainable=True):
 
 def share_one_obs(obs, comm, action_dim, h_num, trainable=True):
     c_input = tf.concat([obs, comm], axis=1)
+    print("disconnect", c_input)
+
     hidden_1 = tf.layers.dense(c_input, h_num, activation=tf.nn.relu,
                                kernel_initializer=tf.random_normal_initializer(0., .1),  # weights
                                bias_initializer=tf.constant_initializer(0.1),  # biases
@@ -106,7 +134,6 @@ def share_one_obs(obs, comm, action_dim, h_num, trainable=True):
 
 
 def comm_encoded_obs(obs, encoders, action_dim, h_num, trainable=True):
-    print(encoders)
     c_input = tf.concat([obs, encoders], axis=1)
     hidden_1 = tf.layers.dense(c_input, h_num, activation=tf.nn.relu,
                                kernel_initializer=tf.random_normal_initializer(0., .1),  # weights
@@ -130,8 +157,6 @@ def comm_encoded_obs(obs, encoders, action_dim, h_num, trainable=True):
 
 
 # Encoding
-
-
 def encoder_network(e_input, out_dim, h_num, h_level, name="encoder", trainable=True):
 
     hidden = e_input
@@ -148,3 +173,7 @@ def encoder_network(e_input, out_dim, h_num, h_level, name="encoder", trainable=
                         use_bias=True, trainable=trainable, reuse=tf.AUTO_REUSE, name=name+"_out")
     return a
 
+
+# Deconding
+def decode_aggregate_network(m_input_list, ):
+    return 0

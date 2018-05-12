@@ -50,4 +50,4 @@ def get_filename():
     # return "a-" + FLAGS.agent + "-lr-" + str(FLAGS.lr) + "-ms-" + str(FLAGS.m_size)
     return "a-" + FLAGS.agent + "-clr-" + str(FLAGS.c_lr) + "-alr-" + str(FLAGS.a_lr) \
            + "-ms-" + str(FLAGS.m_size) + "-hc-" + str(FLAGS.h_critic) + "-co-" + str(FLAGS.comm) \
-           + "-cp-" + str(FLAGS.capa) + "-ss-" + str(FLAGS.s_share) + "-es-" + str(FLAGS.e_share)
+           + "-cp-" + str(FLAGS.capa) + "-ss-" + str(FLAGS.s_share) + "-es-" + str(FLAGS.e_share)  + "-sn-" + str(FLAGS.s_num)

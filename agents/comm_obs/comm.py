@@ -8,7 +8,7 @@ import config
 FLAGS = config.flags.FLAGS
 
 
-def generate_comm_network(obs_list, action_dim, n_agent, trainable=True, share=False):
+def generate_comm_network(obs_list, action_dim, n_agent, trainable=True, share=False, schedule=None):
     actions = list()
     h_num = 32
 
@@ -55,6 +55,32 @@ def generate_comm_network(obs_list, action_dim, n_agent, trainable=True, share=F
             actions.append(agent_actor)
 
     elif FLAGS.comm in [3]:  # Limited Connection (fixed k agent can communicate)
+        # Generate encoder
+        encoder_scope = "encoder"
+        capacity = FLAGS.capa
+        encoder_list = list()
+        n_schedule_agent = FLAGS.s_num
+        for i in range(n_schedule_agent):
+            if not FLAGS.e_share:
+                encoder_scope = "encoder" + str(i)
+
+            with tf.variable_scope(encoder_scope):
+                encoder = encoder_network(obs_list[i], capacity, 32, 1)
+            encoder_list.append(encoder)
+        encoders = tf.concat(encoder_list, axis=1)
+
+        # Generate actor
+        scope = "comm"
+        for i in range(n_agent):
+            if not FLAGS.s_share:
+                scope = "comm" + str(i)
+
+            with tf.variable_scope(scope):
+                agent_actor = comm_encoded_obs(obs_list[i], encoders, action_dim, h_num, trainable)
+
+            actions.append(agent_actor)
+
+    elif FLAGS.comm in [4]:  # Scheduling (fixed k agent can communicate)
         # Generate encoder
         encoder_scope = "encoder"
         capacity = FLAGS.capa

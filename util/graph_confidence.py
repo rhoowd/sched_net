@@ -76,7 +76,7 @@ if __name__ == '__main__':
 
     num_file = len(sys.argv)-1
     filename = []
-    window_size = 1
+    window_size = 2
     for i in range(1, num_file+1):
         filename.append(sys.argv[i])
 

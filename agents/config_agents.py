@@ -9,13 +9,13 @@ def config_agent(_flags):
     # flags.DEFINE_string("agent", "schedule_obs", "Agent")
     flags.DEFINE_string("agent", "comm_obs", "Agent")
 
-    flags.DEFINE_integer("training_step", 20000, "Training time step")
-    flags.DEFINE_integer("testing_step", 2000, "Testing time step")
-    flags.DEFINE_integer("max_step", 200, "Maximum time step per episode")
+    flags.DEFINE_integer("training_step", 300000, "Training time step")
+    flags.DEFINE_integer("testing_step", 2500, "Testing time step")
+    flags.DEFINE_integer("max_step", 500, "Maximum time step per episode")
     flags.DEFINE_integer("eval_step", 2500, "Number of steps before training")
 
     # RL setting
-    flags.DEFINE_float("df", 0.999, "Discount factor")
+    flags.DEFINE_float("df", 0.9, "Discount factor")
 
     # DQN
     flags.DEFINE_float("lr", 0.0001, "Learning rate")
@@ -37,13 +37,13 @@ def config_agent(_flags):
     flags.DEFINE_boolean("qtrace", False, "Use q trace")
     flags.DEFINE_boolean("kt", False, "Keyboard input test")
 
-    flags.DEFINE_integer("comm", 0, "Communication type")
+    flags.DEFINE_integer("comm", 4, "Communication type")
     flags.DEFINE_integer("capa", 2, "Capacity for comm")
     flags.DEFINE_boolean("e_share", False, "Share encoder")
     flags.DEFINE_boolean("s_share", False, "Share sender")
     flags.DEFINE_boolean("a_share", False, "Share aggregator")
 
-    flags.DEFINE_string("sched", "round_robin", "Scheduler type")
+    flags.DEFINE_string("sched", "schedule", "Scheduler type")
     flags.DEFINE_integer("s_num", 1, "Number of agent for sheduling")
 
 def get_filename():

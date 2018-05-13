@@ -222,7 +222,7 @@ def decode_aggregate_network(m_input_list, schedule, out_dim):
 
     for i, msg in enumerate(m_input_list):
         decoded_out = decode_network(msg, out_dim, 16, 1)
-        schedule_i = tf.reshape(schedule[:, 1], [tf.shape(schedule)[0], 1])
+        schedule_i = tf.reshape(schedule[:, i], [tf.shape(schedule)[0], 1])
         schedule_extend = tf.add(schedule_i, tf.zeros([tf.shape(schedule)[0], out_dim]))
         scheduled_out = tf.multiply(decoded_out, schedule_extend)
 

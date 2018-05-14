@@ -27,9 +27,11 @@ result = logging.getLogger('Result')
 result.setLevel(logging.INFO)
 
 if flags.FLAGS.folder == "default":
+    log_filename = "./results/eval/r-" + file_name + ".txt"
     result_fh = logging.FileHandler("./results/eval/r-" + file_name + ".txt")
     nn_filename = "./results/nn/n-" + file_name
 else:
+    log_filename = "./results/eval/"+ flags.FLAGS.folder +"/r-" + file_name + ".txt"
     result_fh = logging.FileHandler("./results/eval/"+ flags.FLAGS.folder +"/r-" + file_name + ".txt")
     nn_filename = "./results/nn/" + flags.FLAGS.folder + "/n-" + file_name
 

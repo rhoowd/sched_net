@@ -8,10 +8,10 @@ import random
 import numpy as np
 import tensorflow as tf
 
-from agents.comm_obs.replay_buffer import ReplayBuffer
-from agents.comm_obs.ac_network import ActorNetwork
-from agents.comm_obs.ac_network import CriticNetwork
-from agents.comm_obs.sched_network import SchedulerNetwork
+from agents.priority.replay_buffer import ReplayBuffer
+from agents.priority.ac_network import ActorNetwork
+from agents.priority.ac_network import CriticNetwork
+from agents.priority.sched_network import SchedulerNetwork
 from agents.evaluation import Evaluation
 
 import logging
@@ -67,8 +67,6 @@ class PredatorAgentIndActor(object):
         self._eval = Evaluation()
         self.q_prev = None
 
-        # self.steps_taken = 0
-
     def save_nn(self, global_step):
         self.saver.save(self.sess, config.nn_filename, global_step)
 
@@ -94,7 +92,7 @@ class PredatorAgentIndActor(object):
 
         return action_list
 
-    def train(self, state, obs_list, action_list, reward_list, state_next, schedule_n, done):
+    def train(self, state, obs_list, action_list, reward_list, state_next, obs_next_list, schedule_n, priority, done):
 
         # use obs_list in partially observable environment
 
@@ -103,18 +101,17 @@ class PredatorAgentIndActor(object):
         a = action_list
         r = np.sum(reward_list)
         s_ = state_next
+        o_ = obs_next_list
         c = schedule_n
+        p = priority
 
-        self.store_sample(s, o, a, r, s_, c, done)
-
-        # self.steps_taken += 1
-        # if self.steps_taken % 16 == 0:
+        self.store_sample(s, o, a, r, s_, o_, c, p, done)
         self.update_ac()
         return 0
 
-    def store_sample(self, s, o, a, r, s_, c, done):
+    def store_sample(self, s, o, a, r, s_, o_, c, p, done):
 
-        self.replay_buffer.add_to_memory((s, o, a, r, s_, c, done))
+        self.replay_buffer.add_to_memory((s, o, a, r, s_, o_, c, p, done))
         return 0
 
     def update_ac(self):
@@ -123,13 +120,19 @@ class PredatorAgentIndActor(object):
             return 0
 
         minibatch = self.replay_buffer.sample_from_memory()
-        s, o, a, r, s_, c, d = map(np.array, zip(*minibatch))
+        s, o, a, r, s_, o_, c, p, d = map(np.array, zip(*minibatch))
         o = np.reshape(o, [-1, self._obs_dim])
+        o_ = np.reshape(o_, [-1, self._obs_dim])
 
-        td_error, _ = self._critic.training_critic(s, r, s_, d)  # train critic
+        p_ = self._scheduler.target_schedule_for_obs(o_)
+        
+        td_error, _ = self._critic.training_critic(s, r, s_, p, p_, d)  # train critic
         _ = self._actor.training_actor(o, a, c, td_error)  # train actor
-        _ = self._scheduler.training_scheduler(o, c, td_error)
+
+        sch_grads = self._critic.grads_for_scheduler(s, p)
+        _ = self._scheduler.training_scheduler(o, sch_grads)
         _ = self._critic.training_target_critic()  # train slow target critic
+        _ = self._scheduler.training_target_scheduler()
 
         return 0
 
@@ -137,10 +140,10 @@ class PredatorAgentIndActor(object):
         # pick one agent to communicate
         # TODO generalize for the number of senders
 
-        schedule_prob = self._scheduler.schedule_for_obs(np.concatenate(obs_list)
+        priority = self._scheduler.schedule_for_obs(np.concatenate(obs_list)
                                                            .reshape(1, self._obs_dim))
-        schedule_idx = np.random.choice(self._n_agent, p=schedule_prob)
-        # schedule_idx = np.argmax(schedule_prob)
+
+        schedule_idx = np.argmax(priority)
         ret = np.zeros(self._n_agent)
         ret[schedule_idx] = 1.0
-        return ret
+        return ret, priority

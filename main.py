@@ -51,3 +51,6 @@ if __name__ == '__main__':
         print("TRAINING TIME (sec)", finish_time - start_time)
     else:
         trainer.test()
+
+
+    print("LOG_FILE:\t" + config.log_filename)

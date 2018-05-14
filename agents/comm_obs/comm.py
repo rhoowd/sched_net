@@ -80,7 +80,7 @@ def generate_comm_network(obs_list, action_dim, n_agent, trainable=True, share=F
 
             actions.append(agent_actor)
 
-    elif FLAGS.comm in [4]:  # Scheduling (scheduled k agent can communicate)
+    elif FLAGS.comm in [4, 5]:  # Scheduling (scheduled k agent can communicate)
         # Generate encoder
         encoder_scope = "encoder"
         aggr_scope = "aggr"
@@ -101,12 +101,18 @@ def generate_comm_network(obs_list, action_dim, n_agent, trainable=True, share=F
             for i in range(n_agent):
                 aggr_scope = "aggr" + str(i)
                 with tf.variable_scope(aggr_scope):
-                    aggr_out = decode_aggregate_network(encoder_list, schedule, decoder_out_dim)
+                    if FLAGS.comm == 4:
+                        aggr_out = decode_aggregate_network(encoder_list, schedule, decoder_out_dim)
+                    elif FLAGS.comm == 5:
+                        aggr_out = decode_concat_network(encoder_list, schedule, decoder_out_dim)
                 aggr_list.append(aggr_out)
 
         else:
             with tf.variable_scope(aggr_scope):
-                aggr_out = decode_aggregate_network(encoder_list, schedule, decoder_out_dim)
+                if FLAGS.comm == 4:
+                    aggr_out = decode_aggregate_network(encoder_list, schedule, decoder_out_dim)
+                elif FLAGS.comm == 5:
+                    aggr_out = decode_concat_network(encoder_list, schedule, decoder_out_dim)
             for i in range(n_agent):
                 aggr_list.append(aggr_out)
 
@@ -232,6 +238,13 @@ def decode_aggregate_network(m_input_list, schedule, out_dim):
             aggregated_out = tf.add(aggregated_out, scheduled_out)
 
     return aggregated_out
+
+def decode_concat_network(m_input_list, schedule, out_dim):
+
+    inp = tf.stack(m_input_list, axis=-2)
+    masked_msg = tf.boolean_mask(tf.reshape(inp, [-1, FLAGS.capa]), tf.reshape(tf.cast(schedule, tf.bool), [-1]))
+
+    return tf.reshape(masked_msg, [-1, FLAGS.s_num * FLAGS.capa], name='scheduled')
 
 
 def decode_network(m_input, out_dim, h_num, h_level, name="decoder", trainable=True):

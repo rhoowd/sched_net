@@ -11,6 +11,7 @@ import tensorflow as tf
 from agents.comm_obs.replay_buffer import ReplayBuffer
 from agents.comm_obs.ac_network import ActorNetwork
 from agents.comm_obs.ac_network import CriticNetwork
+from agents.comm_obs.sched_network import SchedulerNetwork
 from agents.evaluation import Evaluation
 
 import logging
@@ -50,6 +51,7 @@ class PredatorAgentIndActor(object):
             self.sess = tf.Session(graph=my_graph, config=tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=True)))
             self._actor = ActorNetwork(self.sess, self._n_agent, self._obs_dim_per_unit, self._action_dim_per_unit, self._name)
             self._critic = CriticNetwork(self.sess, self._n_agent, self._state_dim, self._name)
+            self._scheduler = SchedulerNetwork(self.sess, self._n_agent, self._obs_dim)
 
             self.sess.run(tf.global_variables_initializer())
             self.saver = tf.train.Saver()
@@ -64,6 +66,8 @@ class PredatorAgentIndActor(object):
 
         self._eval = Evaluation()
         self.q_prev = None
+
+        self.steps_taken = 0
 
     def save_nn(self, global_step):
         self.saver.save(self.sess, config.nn_filename, global_step)
@@ -102,7 +106,10 @@ class PredatorAgentIndActor(object):
         c = schedule_n
 
         self.store_sample(s, o, a, r, s_, c, done)
-        self.update_ac()
+
+        self.steps_taken += 1
+        if self.steps_taken % 16 == 0:
+            self.update_ac()
         return 0
 
     def store_sample(self, s, o, a, r, s_, c, done):
@@ -121,7 +128,19 @@ class PredatorAgentIndActor(object):
 
         td_error, _ = self._critic.training_critic(s, r, s_, d)  # train critic
         _ = self._actor.training_actor(o, a, c, td_error)  # train actor
-
+        _ = self._scheduler.training_scheduler(o, c, td_error)
         _ = self._critic.training_target_critic()  # train slow target critic
 
         return 0
+
+    def schedule(self, obs_list):
+        # pick one agent to communicate
+        # TODO generalize for the number of senders
+
+        schedule_prob = self._scheduler.schedule_for_obs(np.concatenate(obs_list)
+                                                           .reshape(1, self._obs_dim))
+        schedule_idx = np.random.choice(self._n_agent, p=schedule_prob)
+        # schedule_idx = np.argmax(schedule_prob)
+        ret = np.zeros(self._n_agent)
+        ret[schedule_idx] = 1.0
+        return ret

@@ -37,11 +37,12 @@ def config_agent(_flags):
     flags.DEFINE_boolean("qtrace", False, "Use q trace")
     flags.DEFINE_boolean("kt", False, "Keyboard input test")
 
-    flags.DEFINE_integer("comm", 4, "Communication type")
+    flags.DEFINE_integer("comm", 5, "Communication type")
     flags.DEFINE_integer("capa", 2, "Capacity for comm")
     flags.DEFINE_boolean("e_share", False, "Share encoder")
     flags.DEFINE_boolean("s_share", False, "Share sender")
     flags.DEFINE_boolean("a_share", False, "Share aggregator")
+    flags.DEFINE_boolean("use_codec", True, "Use encoder and decoder")
 
     flags.DEFINE_string("sched", "schedule", "Scheduler type")
     flags.DEFINE_integer("s_num", 1, "Number of agent for sheduling")
@@ -54,4 +55,4 @@ def get_filename():
     return "a-" + FLAGS.agent + "-clr-" + str(FLAGS.c_lr) + "-alr-" + str(FLAGS.a_lr) \
            + "-ms-" + str(FLAGS.m_size) + "-hc-" + str(FLAGS.h_critic) + "-co-" + str(FLAGS.comm) \
            + "-cp-" + str(FLAGS.capa) + "-ss-" + str(FLAGS.s_share) + "-es-" + str(FLAGS.e_share) \
-           + "-sn-" + str(FLAGS.s_num) + "-sched-" + str(FLAGS.sched)
+           + "-sn-" + str(FLAGS.s_num) + "-sched-" + str(FLAGS.sched) + "-cd-" + str(FLAGS.use_codec)

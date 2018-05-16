@@ -27,9 +27,18 @@ class Prey(CoreAgent):
 
 
 class Predator(CoreAgent):
-    def __init__(self):
+    def __init__(self, id=0):
         super(Predator, self).__init__('predator', 'blue')
-        self.obs_range = FLAGS.obs_range
+        self.id = id
+
+        if FLAGS.hetero > 0:  # Hetero
+            if self.id == 0:
+                self.obs_range = 2
+            else:
+                self.obs_range = 1
+
+        else:  # Homogeneous
+            self.obs_range = FLAGS.obs_range
 
         self.last_obs_x = 0.5
         self.last_obs_y = 0.5
@@ -72,7 +81,7 @@ class Scenario(BaseScenario):
         # add predators
         n_predator = FLAGS.n_predator
         for i in range(n_predator):
-            agents.append(Predator())
+            agents.append(Predator(i))
             self.atype_to_idx['predator'].append(i)
 
         # add preys
@@ -124,24 +133,6 @@ class Scenario(BaseScenario):
             if agent.is_captured(world):
                 return -1
         return 0
-
-    # def reward(self, agent, world):
-    #     if agent.itype == 'predator':
-    #         if self.prey_captured:
-    #             return 1
-    #         else:
-    #             reward = -0.01
-    #             # determine whether the prey has been captured
-    #             for i in self.atype_to_idx['prey']:
-    #                 prey = world.agents[i]
-    #                 if prey.is_captured(world):
-    #                     self.prey_captured = True
-    #                     return 1
-    #             return reward
-    #     else: # if prey
-    #         if agent.is_captured(world):
-    #             return -1
-    #     return 0
 
     def encode_grid_to_onehot(self, world, grid):
         encoded = grid.encode() # full encoded map
@@ -216,41 +207,15 @@ class Scenario(BaseScenario):
             px = (coor_prey // obs_size) / (obs_size - 1)
             py = (coor_prey % obs_size) / (obs_size - 1)
 
-        return check_prey, px, py
+            if FLAGS.hetero == 2:
+                if agent.id in [4]:
+                    if not px == 0.5:
+                        print(agent.id, px, py)
+                        check_prey = 0.0
+                        px = -1.0
+                        py = -1.0
 
-    # def observation(self, agent, world):
-    #     # obs_native = np.array(agent.get_obs())
-    #     obs_native = self.encode_grid_to_onehot(world, agent.get_obs())
-    #     # encode all predators and preys into same id
-    #     # TODO: try not to distinguish the same kind of agents..
-    #     indistinguish = True
-    #     if indistinguish:
-    #         obs = np.array([])
-    #         for cell in obs_native.reshape(-1, len(world.agents) + 1):
-    #             # one-hot encoded cell w.r.t. agent id
-    #             compact_cell = np.zeros(3) # wall, predator, prey
-    #             if np.max(cell) != 0:
-    #                 idx = np.argmax(cell)
-    #                 if idx == 0: # wall
-    #                     compact_cell[0] = 1.0
-    #                 elif idx in [world.agents[i].id for i in self.atype_to_idx['predator']]:
-    #                     compact_cell[1] = 1.0
-    #                 elif idx in [world.agents[i].id for i in self.atype_to_idx['prey']]:
-    #                     compact_cell[2] = 1.0
-    #                 else:
-    #                     raise Exception('cell has to be wall/predator/prey!')
-    #             obs = np.concatenate([obs, compact_cell])
-    #         ret = obs
-    #     else:
-    #         ret = obs_native
-    #     if not FLAGS.obs_diagonal:
-    #         blk = ret.reshape([-1, 3])
-    #         ret = np.concatenate([[blk[1]], blk[3:6], [blk[7]]]).flatten()
-    #     # encode current position into observation
-    #     x, y = agent.pos
-    #     ret = np.concatenate([ret, [x / (world.grid.width-1), y / (world.grid.height-1)]])
-    #
-    #     return ret
+        return check_prey, px, py
 
     def info(self, agent, world):
         # info() returns the global state

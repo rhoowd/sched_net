@@ -94,7 +94,7 @@ class ActorNetwork:
         for i in range(self.n_agent):
             obs_list.append(obs[:, i * self.obs_dim_per_unit:(i + 1) * self.obs_dim_per_unit])
 
-        ret = comm.generate_comm_network(obs_list, self.action_dim, self.n_agent, schedule=schedule)
+        ret = comm.generate_comm_network(obs_list, self.obs_dim_per_unit, self.action_dim, self.n_agent, schedule=schedule)
         # ret = comm.generate_comm_network_0_schedule(obs_list, self.action_dim, self.n_agent)
         # ret = comm.generate_actor_network(obs_list, self.action_dim, self.n_agent)
         return ret

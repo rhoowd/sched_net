@@ -4,13 +4,16 @@ from __future__ import absolute_import
 import tensorflow as tf
 import numpy as np
 import config
+import sys
 
 FLAGS = config.flags.FLAGS
 
 
-def generate_comm_network(obs_list, action_dim, n_agent, trainable=True, share=False, schedule=None):
+def generate_comm_network(obs_list, obs_dim_per_unit, action_dim, n_agent, trainable=True, share=False, schedule=None):
     actions = list()
     h_num = 32
+
+    capacity = FLAGS.capa if FLAGS.use_codec else obs_dim_per_unit
 
     if FLAGS.comm in [0, 1]:
         scope = "comm"
@@ -33,7 +36,6 @@ def generate_comm_network(obs_list, action_dim, n_agent, trainable=True, share=F
     elif FLAGS.comm in [2]:  # Full connection
         # Generate encoder
         encoder_scope = "encoder"
-        capacity = FLAGS.capa
         encoder_list = list()
         for i in range(n_agent):
             if not FLAGS.e_share:
@@ -57,7 +59,6 @@ def generate_comm_network(obs_list, action_dim, n_agent, trainable=True, share=F
     elif FLAGS.comm in [3]:  # Limited Connection (fixed k agent can communicate)
         # Generate encoder
         encoder_scope = "encoder"
-        capacity = FLAGS.capa
         encoder_list = list()
         n_schedule_agent = FLAGS.s_num
         for i in range(n_schedule_agent):
@@ -84,7 +85,6 @@ def generate_comm_network(obs_list, action_dim, n_agent, trainable=True, share=F
         # Generate encoder
         encoder_scope = "encoder"
         aggr_scope = "aggr"
-        capacity = FLAGS.capa
         decoder_out_dim = 16
         encoder_list = list()
 
@@ -104,7 +104,7 @@ def generate_comm_network(obs_list, action_dim, n_agent, trainable=True, share=F
                     if FLAGS.comm == 4:
                         aggr_out = decode_aggregate_network(encoder_list, schedule, decoder_out_dim)
                     elif FLAGS.comm == 5:
-                        aggr_out = decode_concat_network(encoder_list, schedule, decoder_out_dim)
+                        aggr_out = decode_concat_network(encoder_list, schedule, capacity, decoder_out_dim)
                 aggr_list.append(aggr_out)
 
         else:
@@ -112,7 +112,7 @@ def generate_comm_network(obs_list, action_dim, n_agent, trainable=True, share=F
                 if FLAGS.comm == 4:
                     aggr_out = decode_aggregate_network(encoder_list, schedule, decoder_out_dim)
                 elif FLAGS.comm == 5:
-                    aggr_out = decode_concat_network(encoder_list, schedule, decoder_out_dim)
+                    aggr_out = decode_concat_network(encoder_list, schedule, capacity, decoder_out_dim)
             for i in range(n_agent):
                 aggr_list.append(aggr_out)
 
@@ -205,24 +205,29 @@ def comm_encoded_obs(obs, c_input, action_dim, h_num, trainable=True):
 
 # Encoding
 def encoder_network(e_input, out_dim, h_num, h_level, name="encoder", trainable=True):
+    if FLAGS.use_codec:
+        hidden = e_input
+        for i in range(h_level):
 
-    hidden = e_input
-    for i in range(h_level):
+            hidden = tf.layers.dense(hidden, h_num, activation=tf.nn.relu,
+                                     kernel_initializer=tf.random_normal_initializer(0., .1),  # weights
+                                     bias_initializer=tf.constant_initializer(0.1),  # biases
+                                     use_bias=True, trainable=trainable, reuse=tf.AUTO_REUSE, name=name+str(i))
 
-        hidden = tf.layers.dense(hidden, h_num, activation=tf.nn.relu,
-                                 kernel_initializer=tf.random_normal_initializer(0., .1),  # weights
-                                 bias_initializer=tf.constant_initializer(0.1),  # biases
-                                 use_bias=True, trainable=trainable, reuse=tf.AUTO_REUSE, name=name+str(i))
-
-    a = tf.layers.dense(hidden, out_dim, activation=tf.nn.relu,
-                        kernel_initializer=tf.random_normal_initializer(0., .1),  # weights
-                        bias_initializer=tf.constant_initializer(0.1),  # biases
-                        use_bias=True, trainable=trainable, reuse=tf.AUTO_REUSE, name=name+"_out")
-    return a
+        a = tf.layers.dense(hidden, out_dim, activation=tf.nn.relu,
+                            kernel_initializer=tf.random_normal_initializer(0., .1),  # weights
+                            bias_initializer=tf.constant_initializer(0.1),  # biases
+                            use_bias=True, trainable=trainable, reuse=tf.AUTO_REUSE, name=name+"_out")
+        return a
+    else:
+        return e_input
 
 
 # Decoding and aggregating
 def decode_aggregate_network(m_input_list, schedule, out_dim):
+    if not FLAGS.use_codec:
+        print("Aggregate network cannot be used. 'use_codec' parameter set to False.")
+        sys.exit()
 
     aggregated_out = None
 
@@ -239,26 +244,28 @@ def decode_aggregate_network(m_input_list, schedule, out_dim):
 
     return aggregated_out
 
-def decode_concat_network(m_input_list, schedule, out_dim):
+def decode_concat_network(m_input_list, schedule, capacity, out_dim):
 
     inp = tf.stack(m_input_list, axis=-2)
-    masked_msg = tf.boolean_mask(tf.reshape(inp, [-1, FLAGS.capa]), tf.reshape(tf.cast(schedule, tf.bool), [-1]))
+    masked_msg = tf.boolean_mask(tf.reshape(inp, [-1, capacity]), tf.reshape(tf.cast(schedule, tf.bool), [-1]))
 
-    return tf.reshape(masked_msg, [-1, FLAGS.s_num * FLAGS.capa], name='scheduled')
+    return tf.reshape(masked_msg, [-1, FLAGS.s_num * capacity], name='scheduled')
 
 
 def decode_network(m_input, out_dim, h_num, h_level, name="decoder", trainable=True):
+    if FLAGS.use_codec:
+        hidden = m_input
+        for i in range(h_level):
 
-    hidden = m_input
-    for i in range(h_level):
+            hidden = tf.layers.dense(hidden, h_num, activation=tf.nn.relu,
+                                     kernel_initializer=tf.random_normal_initializer(0., .1),  # weights
+                                     bias_initializer=tf.constant_initializer(0.1),  # biases
+                                     use_bias=True, trainable=trainable, reuse=tf.AUTO_REUSE, name=name+str(i))
 
-        hidden = tf.layers.dense(hidden, h_num, activation=tf.nn.relu,
-                                 kernel_initializer=tf.random_normal_initializer(0., .1),  # weights
-                                 bias_initializer=tf.constant_initializer(0.1),  # biases
-                                 use_bias=True, trainable=trainable, reuse=tf.AUTO_REUSE, name=name+str(i))
-
-    a = tf.layers.dense(hidden, out_dim, activation=tf.nn.relu,
-                        kernel_initializer=tf.random_normal_initializer(0., .1),  # weights
-                        bias_initializer=tf.constant_initializer(0.1),  # biases
-                        use_bias=True, trainable=trainable, reuse=tf.AUTO_REUSE, name=name+"_out")
-    return a
+        a = tf.layers.dense(hidden, out_dim, activation=tf.nn.relu,
+                            kernel_initializer=tf.random_normal_initializer(0., .1),  # weights
+                            bias_initializer=tf.constant_initializer(0.1),  # biases
+                            use_bias=True, trainable=trainable, reuse=tf.AUTO_REUSE, name=name+"_out")
+        return a
+    else:
+        return m_input

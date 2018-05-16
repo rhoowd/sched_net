@@ -249,6 +249,12 @@ def decode_concat_network(m_input_list, schedule, capacity, out_dim):
     inp = tf.stack(m_input_list, axis=-2)
     masked_msg = tf.boolean_mask(tf.reshape(inp, [-1, capacity]), tf.reshape(tf.cast(schedule, tf.bool), [-1]))
 
+    if FLAGS.sched == 'connect':
+        return tf.reshape(masked_msg, [-1, len(m_input_list) * capacity], name='scheduled')
+    elif FLAGS.sched == 'disconnect':
+        return tf.zeros([tf.shape(schedule)[0], 1])
+    elif FLAGS.sched == 'one':
+        return tf.reshape(masked_msg, [-1, 1 * capacity], name='scheduled')
     return tf.reshape(masked_msg, [-1, FLAGS.s_num * capacity], name='scheduled')
 
 

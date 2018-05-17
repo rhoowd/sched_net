@@ -207,6 +207,10 @@ class Trainer(object):
         self._predator_agent.train(state, predator_obs, predator_action, predator_reward,
                                    state_next, predator_obs_next, schedule_n, priority, done)
 
+    def train_autoencoder(self, obs_n):
+        predator_obs = [obs_n[i] for i in self._agent_profile['predator']['idx']]
+        return self._predator_agent.train_autoencoder(predator_obs)
+
     def test(self, curr_ep=None):
 
         global_step = 0

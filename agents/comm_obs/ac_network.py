@@ -75,10 +75,10 @@ class ActorNetwork:
             with tf.variable_scope("ae_" + scope):
                 self.autoencoder = self.generate_autoencoder(self.ae_input, obs_dim_per_unit)
 
-            self.ae_loss = tf.reduce_mean(tf.squred_difference(self.ae_input, self.autoencoder))
+            self.ae_loss = tf.reduce_mean(tf.squared_difference(self.ae_input, self.autoencoder))
             self.ae_train_op = tf.train.AdamOptimizer(lr_actor).minimize(self.ae_loss)
 
-            self.initialize_encoder_op = self.copy_ae_values_to_encoders()
+            self.initialize_encoders_op = self.copy_ae_values_to_encoders(scope)
 
     # will use this to initialize both the actor network its slowly-changing target network with same structure
     def generate_actor_network(self, obs, schedule, trainable, share=False):
@@ -107,7 +107,7 @@ class ActorNetwork:
                                         self.is_training_ph: True})
 
 
-    def generate_autoencoder(e_input, obs_dim_per_unit, out_dim=FLAGS.capa, h_num=32, h_level=1, name="ae", trainable=True):
+    def generate_autoencoder(self, e_input, obs_dim_per_unit, out_dim=FLAGS.capa, h_num=32, h_level=1, name="ae", trainable=True):
         if FLAGS.use_codec:
             hidden = e_input
 
@@ -142,7 +142,7 @@ class ActorNetwork:
         else:
             return e_input
 
-    def copy_ae_values_to_encoders(self):
+    def copy_ae_values_to_encoders(self, scope):
         if not FLAGS.e_share:
             enc_scopes = ["encoder" + str(i) for i in range(self.n_agent)]
         else:
@@ -150,14 +150,17 @@ class ActorNetwork:
 
         ae_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope="ae_" + scope + "/encoder")
 
+        print ae_vars
+
         update_encoder_ops_c = []
-        for scope in enc_scopes:
-            encoder_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=scope)
+        for e_scope in enc_scopes:
+            encoder_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope+"/"+e_scope)
+            print encoder_vars
             for i, enc_var in enumerate(encoder_vars):
                 update_encoder_op = enc_var.assign(ae_vars[i])
                 update_encoder_ops_c.append(update_encoder_op)
 
-        return tf.group(*update_encoder_op_c)
+        return tf.group(*update_encoder_ops_c)
 
     def initialize_encoder_using_ae_weights(self):
         return self.sess.run(self.initialize_encoders_op)

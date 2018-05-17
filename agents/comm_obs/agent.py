@@ -144,12 +144,12 @@ class PredatorAgentIndActor(object):
         return ret
 
 
-    def train_autoencoder(obs_list):
+    def train_autoencoder(self, obs_list):
         for obs in obs_list:
             self._ae_dataset.append(obs)
 
         if len(self._ae_dataset) == 64:
-            error = self._actor.train_autoencoder(obs)
+            error = self._actor.train_autoencoder(self._ae_dataset)
             self._ae_dataset = self._ae_dataset[:48]
             return error
         else:

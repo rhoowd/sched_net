@@ -8,7 +8,7 @@ from agents.simple_agent import RandomAgent
 from agents.evaluation import Evaluation
 import logging
 import config
-from envs.gui import canvas
+# from envs.gui import canvas
 
 FLAGS = config.flags.FLAGS
 logger = logging.getLogger("Agent")
@@ -50,10 +50,34 @@ class Trainer(object):
             self.canvas.setup()
 
     def learn(self):
+        print_flag = True
 
+        if FLAGS.ae_initializer:
+            step = 0
+            while step < ae_training_step:
+                done = False
+                while not done:
+                    step += 1
+                    self.epsilon = 2.0
+                    schedule_n = self.get_schedule(obs_n, global_step, FLAGS.sched)
+                    action_n = self.get_action(obs_n, schedule_n, global_step)
+                    obs_n_next,_,done_n,_ = self._env.step(action_n) # obs_n_next
+                    
+                    done_single = sum(done_n) > 0
+                    error = self.train_autoencoder(obs_n)
+                    obs_n = obs_n_next
+
+                    if print_flag and error >= 0:
+                        print("[train_ep %d]" % (-1),"\tstep:", step, "\terror:", error)
+                    
+                    if is_episode_done(done_n, global_step):
+                        done = True
+
+            self._predator_agent.initialize_encoder()
+
+        self.epsilon = 0.5
         global_step = 0
         episode_num = 0
-        print_flag = True
 
         while global_step < training_step:
             episode_num += 1
@@ -174,6 +198,10 @@ class Trainer(object):
         _ = [obs_n_next[i] for i in self._agent_profile['predator']['idx']]
         self._predator_agent.train(state, predator_obs, predator_action, predator_reward,
                                    state_next, schedule_n, done)
+
+    def train_autoencoder(self, obs_n):
+        predator_obs = [obs_n[i] for i in self._agent_profile['predator']['idx']]
+        return self._predator_agent.train_autoencoder(predator_obs)
 
     def test(self, curr_ep=None):
 

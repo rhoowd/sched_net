@@ -9,7 +9,7 @@ def config_agent(_flags):
     # flags.DEFINE_string("agent", "schedule_obs", "Agent")
     flags.DEFINE_string("agent", "comm_obs", "Agent")
 
-    flags.DEFINE_integer("training_step", 300000, "Training time step")
+    flags.DEFINE_integer("training_step", 500000, "Training time step")
     flags.DEFINE_integer("testing_step", 2500, "Testing time step")
     flags.DEFINE_integer("max_step", 500, "Maximum time step per episode")
     flags.DEFINE_integer("eval_step", 2500, "Number of steps before training")
@@ -29,6 +29,8 @@ def config_agent(_flags):
     flags.DEFINE_float("tau", 0.05, "Learning rate")
     flags.DEFINE_boolean("use_action_in_critic", False, "Use guided samples")
     flags.DEFINE_integer("h_critic", 64, "Width of hidden layer for critic")
+    flags.DEFINE_boolean("ae_initializer", False, "Use autoencoder to initialize encoder")
+
 
     # Basic setting for simulation
     flags.DEFINE_boolean("load_nn", False, "Load nn from file or not")
@@ -55,4 +57,4 @@ def get_filename():
     return "a-" + FLAGS.agent + "-clr-" + str(FLAGS.c_lr) + "-alr-" + str(FLAGS.a_lr) \
            + "-ms-" + str(FLAGS.m_size) + "-hc-" + str(FLAGS.h_critic) + "-co-" + str(FLAGS.comm) \
            + "-cp-" + str(FLAGS.capa) + "-ss-" + str(FLAGS.s_share) + "-es-" + str(FLAGS.e_share) \
-           + "-sn-" + str(FLAGS.s_num) + "-sched-" + str(FLAGS.sched) + "-cd-" + str(FLAGS.use_codec)
+           + "-sn-" + str(FLAGS.s_num) + "-sched-" + str(FLAGS.sched) + "-cd-" + str(FLAGS.use_codec) + "-ae-" + str(FLAGS.ae_initializer)

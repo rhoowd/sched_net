@@ -202,7 +202,6 @@ def comm_encoded_obs(obs, c_input, action_dim, h_num, trainable=True):
                         use_bias=True, trainable=trainable, reuse=tf.AUTO_REUSE, name='sender_4')
     return a
 
-
 # Encoding
 def encoder_network(e_input, out_dim, h_num, h_level, name="encoder", trainable=True):
     if FLAGS.use_codec:

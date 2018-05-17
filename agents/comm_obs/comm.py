@@ -203,7 +203,7 @@ def comm_encoded_obs(obs, c_input, action_dim, h_num, trainable=True):
     return a
 
 # Encoding
-def encoder_network(e_input, out_dim, h_num, h_level, name="encoder", trainable=True):
+def encoder_network(e_input, out_dim, h_num, h_level, name="encoder", trainable=FLAGS.trainable_encoder):
     if FLAGS.use_codec:
         hidden = e_input
         for i in range(h_level):

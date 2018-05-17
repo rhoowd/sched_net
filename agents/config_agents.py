@@ -30,6 +30,8 @@ def config_agent(_flags):
     flags.DEFINE_boolean("use_action_in_critic", False, "Use guided samples")
     flags.DEFINE_integer("h_critic", 64, "Width of hidden layer for critic")
     flags.DEFINE_boolean("ae_initializer", False, "Use autoencoder to initialize encoder")
+    flags.DEFINE_boolean("trainable_encoder", True, "Make the encoder trainable")
+
 
 
     # Basic setting for simulation
@@ -57,4 +59,5 @@ def get_filename():
     return "a-" + FLAGS.agent + "-clr-" + str(FLAGS.c_lr) + "-alr-" + str(FLAGS.a_lr) \
            + "-ms-" + str(FLAGS.m_size) + "-hc-" + str(FLAGS.h_critic) + "-co-" + str(FLAGS.comm) \
            + "-cp-" + str(FLAGS.capa) + "-ss-" + str(FLAGS.s_share) + "-es-" + str(FLAGS.e_share) \
-           + "-sn-" + str(FLAGS.s_num) + "-sched-" + str(FLAGS.sched) + "-cd-" + str(FLAGS.use_codec) + "-ae-" + str(FLAGS.ae_initializer)
+           + "-sn-" + str(FLAGS.s_num) + "-sched-" + str(FLAGS.sched) + "-cd-" + str(FLAGS.use_codec) \
+           + "-ae-" + str(FLAGS.ae_initializer) + "-te-" + str(FLAGS.trainable_encoder)

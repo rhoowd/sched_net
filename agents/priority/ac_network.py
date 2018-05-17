@@ -153,7 +153,12 @@ class ActorNetwork:
 
         update_encoder_ops_c = []
         for e_scope in enc_scopes:
-            encoder_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope+"/"+e_scope)
+            
+            if FLAGS.trainable_encoder:
+                encoder_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope+"/"+e_scope)
+            else:
+                encoder_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=scope+"/"+e_scope)
+
             print encoder_vars
             for i, enc_var in enumerate(encoder_vars):
                 update_encoder_op = enc_var.assign(ae_vars[i])

@@ -8,7 +8,7 @@ from agents.simple_agent import RandomAgent
 from agents.evaluation import Evaluation
 import logging
 import config
-# from envs.gui import canvas
+from envs.gui import canvas
 
 FLAGS = config.flags.FLAGS
 logger = logging.getLogger("Agent")

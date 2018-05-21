@@ -179,6 +179,9 @@ class Trainer(object):
         elif type == 'one':
             ret = np.full(self._n_predator, 0.0)
             ret[0] = 1.0
+        elif type == "last":
+            ret = np.full(self._n_predator, 0.0)
+            ret[-1] = 1.0
         elif type == "round_robin":
             ret = np.full(self._n_predator, 0.0)
             ret[global_step % self._n_predator] = 1.0

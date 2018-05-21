@@ -213,6 +213,14 @@ class Trainer(object):
 
     def test(self, curr_ep=None):
 
+        if FLAGS.log_test:
+            if FLAGS.load_nn:
+                logfile = FLAGS.nn_file.split("/")[-1]
+            else:
+                logfile = config.log_filename.split("/")[-1]
+
+            f = open("./results/test/" + logfile + "test_log.txt", "w")
+
         global_step = 0
         episode_num = 0
 
@@ -238,6 +246,13 @@ class Trainer(object):
                 action_n = self.get_action(obs_n, schedule_n, global_step, False)
                 obs_n_next, reward_n, done_n, info_n = self._env.step(action_n)
                 state_next = info_n[0]['state']
+
+                if FLAGS.log_test:
+                    pr_obs_n = [obs.tolist() for obs in obs_n]
+                    f.write("obs\t" + str(pr_obs_n) + "\n")
+                    f.write("sched\t" + str(schedule_n) + "\n")
+                    f.write("prio\t" + str(priority) + "\n")
+                    f.write("done\t" + str(done_n[0]) + "\n")
 
                 obs_cnt += self.check_obs(obs_n_next)
 

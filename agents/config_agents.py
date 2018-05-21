@@ -40,6 +40,7 @@ def config_agent(_flags):
     flags.DEFINE_boolean("train", True, "Training or testing")
     flags.DEFINE_boolean("qtrace", False, "Use q trace")
     flags.DEFINE_boolean("kt", False, "Keyboard input test")
+    flags.DEFINE_boolean("log_test", False, "Create a full log for test")
 
     flags.DEFINE_integer("comm", 5, "Communication type")
     flags.DEFINE_integer("capa", 2, "Capacity for comm")

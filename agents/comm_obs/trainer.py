@@ -52,7 +52,7 @@ class Trainer(object):
     def ae_initialization(self):
         print_flag = True
         real_epsilon = self.epsilon
-        ae_training_step = 50000
+        ae_training_step = 100000
 
         step = 0
         obs_n = self._env.reset()  # obs_n

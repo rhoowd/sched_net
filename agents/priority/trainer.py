@@ -52,7 +52,7 @@ class Trainer(object):
     def ae_initialization(self):
         print_flag = True
         real_epsilon = self.epsilon
-        ae_training_step = 50000
+        ae_training_step = 100000
 
         step = 0
         obs_n = self._env.reset()  # obs_n
@@ -185,9 +185,9 @@ class Trainer(object):
             return ret
         elif type == 'schedule':
             if train and (global_step < FLAGS.m_size * FLAGS.pre_train_step or np.random.rand() < self.epsilon):
-                # i = np.random.choice(range(self._n_predator), 1)
                 priority = np.random.rand(self._n_predator)
-                i = np.argmax(priority)
+                # i = np.argmax(priority)
+                i = np.argsort(-priority)[:FLAGS.s_num]
                 ret = np.full(self._n_predator, 0.0)
                 ret[i] = 1.0
                 return ret, priority

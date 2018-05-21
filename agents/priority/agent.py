@@ -138,14 +138,20 @@ class PredatorAgentIndActor(object):
 
         return 0
 
-    def schedule(self, obs_list):
-        # pick one agent to communicate
-        # TODO generalize for the number of senders
 
+    def schedule(self, obs_list):
         priority = self._scheduler.schedule_for_obs(np.concatenate(obs_list)
                                                            .reshape(1, self._obs_dim))
+        # SOFTMAX PROBABILITY
+        # sm = softmax(priority)
+        # schedule_idx = np.random.choice(self._n_agent, p=sm)
+        
+        # IF N_SUM == 1
+        # schedule_idx = np.argmax(priority)
+        
+        # IF N_SUM > 1
+        schedule_idx = np.argsort(-priority)[:FLAGS.s_num]
 
-        schedule_idx = np.argmax(priority)
         ret = np.zeros(self._n_agent)
         ret[schedule_idx] = 1.0
         return ret, priority
@@ -163,3 +169,6 @@ class PredatorAgentIndActor(object):
 
     def initialize_encoder(self):
         self._actor.initialize_encoder_using_ae_weights()
+
+def softmax(x):
+    return np.exp(x) / np.sum(np.exp(x), axis=0)

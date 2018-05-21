@@ -210,7 +210,7 @@ class Scenario(BaseScenario):
             if FLAGS.hetero == 2:
                 if agent.id in [4]:
                     if not px == 0.5:
-                        print(agent.id, px, py)
+                        # print(agent.id, px, py)
                         check_prey = 0.0
                         px = -1.0
                         py = -1.0

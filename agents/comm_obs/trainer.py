@@ -8,7 +8,7 @@ from agents.simple_agent import RandomAgent
 from agents.evaluation import Evaluation
 import logging
 import config
-from envs.gui import canvas
+# from envs.gui import canvas
 
 FLAGS = config.flags.FLAGS
 logger = logging.getLogger("Agent")
@@ -149,6 +149,9 @@ class Trainer(object):
         elif type == 'one':
             ret = np.full(self._n_predator, 0.0)
             ret[0] = 1.0
+        elif type == "last":
+            ret = np.full(self._n_predator, 0.0)
+            ret[-1] = 1.0
         elif type == "round_robin":
             ret = np.full(self._n_predator, 0.0)
             ret[global_step % self._n_predator] = 1.0

@@ -8,7 +8,7 @@ from agents.simple_agent import RandomAgent
 from agents.evaluation import Evaluation
 import logging
 import config
-from envs.gui import canvas
+# from envs.gui import canvas
 
 FLAGS = config.flags.FLAGS
 logger = logging.getLogger("Agent")
@@ -178,6 +178,8 @@ class Trainer(object):
                                    state_next, predator_obs_next, schedule_n, priority, done)
 
     def test(self, curr_ep=None):
+        logfile = FLAGS.nn_file.split("/")[-1]
+        f = open("./results/test/" + logfile + "test_log.txt", "w")
 
         global_step = 0
         episode_num = 0
@@ -204,6 +206,12 @@ class Trainer(object):
                 action_n = self.get_action(obs_n, schedule_n, global_step, False)
                 obs_n_next, reward_n, done_n, info_n = self._env.step(action_n)
                 state_next = info_n[0]['state']
+
+                pr_obs_n = [obs.tolist() for obs in obs_n]
+                f.write("obs\t" + str(pr_obs_n) + "\n")
+                f.write("sched\t" + str(schedule_n) + "\n")
+                f.write("prio\t" + str(priority) + "\n")
+                f.write("done\t" + str(done_n[0]) + "\n")
 
                 obs_cnt += self.check_obs(obs_n_next)
 
@@ -234,7 +242,7 @@ class Trainer(object):
 def is_episode_done(done, step, e_type="train"):
 
     if e_type == "test":
-        if sum(done) > 0 or step >= FLAGS.testing_step:
+        if sum(done) > 0: # or step >= FLAGS.testing_step:
             return True
         else:
             return False

@@ -98,7 +98,7 @@ class Canvas():
         self.y_corrector = self.my/2
         self.cam_view_scaler = 2
 
-        self.button_value = 2
+        self.button_value = 0
         
     def setup(self):
 
@@ -324,7 +324,7 @@ class Canvas():
 
 
         if self.button_value == 1:
-            sleep(0.5)
+            sleep(0.1)
 
         elif self.button_value == 0:
             self.button_value = 3

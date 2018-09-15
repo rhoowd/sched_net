@@ -15,8 +15,7 @@ import numpy as np
 FLAGS = config.flags.FLAGS
 
 def set_seed(seed):
-    """Initialized the random seeds
-    """
+
     random.seed(seed)
     np.random.seed(seed)
     tf.set_random_seed(seed)
@@ -27,22 +26,17 @@ if __name__ == '__main__':
 
     set_seed(1)
 
-    # === Logging setup === #
     logger_env = logging.getLogger('GridMARL')
     logger_agent = logging.getLogger('Agent')
 
-    # === Program start === #
-    # Load environment
     env = make_env.make_env(FLAGS.scenario)
     logger_env.info('GridMARL Start with %d predator(s) and %d prey(s)', FLAGS.n_predator, FLAGS.n_prey)
 
-    # Load trainer
     logger_agent.info('Agent: {}'.format(FLAGS.agent))
     trainer = agents.load(FLAGS.agent+"/trainer.py").Trainer(env)
 
     print(FLAGS.agent, config.file_name)
 
-    # start learning
     if FLAGS.train:
         start_time = time.time()
         trainer.learn()

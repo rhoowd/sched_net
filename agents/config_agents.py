@@ -6,8 +6,8 @@
 def config_agent(_flags):
     flags = _flags
 
-    # flags.DEFINE_string("agent", "schedule_obs", "Agent")
-    flags.DEFINE_string("agent", "comm_obs", "Agent")
+    # flags.DEFINE_string("agent", "comm_obs", "Agent")
+    flags.DEFINE_string("agent", "priority", "Agent")
 
     flags.DEFINE_integer("training_step", 500000, "Training time step")
     flags.DEFINE_integer("testing_step", 2500, "Testing time step")
@@ -29,6 +29,7 @@ def config_agent(_flags):
     flags.DEFINE_float("tau", 0.05, "Learning rate")
     flags.DEFINE_boolean("use_action_in_critic", False, "Use guided samples")
     flags.DEFINE_integer("h_critic", 64, "Width of hidden layer for critic")
+    # flags.DEFINE_boolean("ae_initializer", False, "Use autoencoder to initialize encoder")
     flags.DEFINE_boolean("trainable_encoder", True, "Make the encoder trainable")
 
 

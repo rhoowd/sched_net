@@ -70,16 +70,6 @@ class ActorNetwork:
         var_grads = tf.gradients(self.loss, self.actor_vars)
         self.actor_train_op = tf.train.AdamOptimizer(lr_actor * lr_decay).apply_gradients(zip(var_grads,self.actor_vars))
 
-        if FLAGS.ae_initializer:
-            self.ae_input = tf.placeholder(dtype=tf.float32, shape=[None, obs_dim_per_unit])
-            with tf.variable_scope("ae_" + scope):
-                self.autoencoder = self.generate_autoencoder(self.ae_input, obs_dim_per_unit)
-
-            self.ae_loss = tf.reduce_mean(tf.squared_difference(self.ae_input, self.autoencoder))
-            self.ae_train_op = tf.train.AdamOptimizer(lr_actor).minimize(self.ae_loss)
-
-            self.initialize_encoders_op = self.copy_ae_values_to_encoders(scope)
-
     # will use this to initialize both the actor network its slowly-changing target network with same structure
     def generate_actor_network(self, obs, schedule, trainable, share=False):
 
@@ -105,74 +95,6 @@ class ActorNetwork:
                                         self.schedule_ph: schedule_ph,
                                         self.td_errors: td_errors,
                                         self.is_training_ph: True})
-
-
-    def generate_autoencoder(self, e_input, obs_dim_per_unit, out_dim=FLAGS.capa, h_num=32, h_level=1, name="ae", trainable=True):
-        if FLAGS.use_codec:
-            hidden = e_input
-
-            with tf.variable_scope("encoder"):
-                for i in range(h_level):
-
-                    hidden = tf.layers.dense(hidden, h_num, activation=tf.nn.relu,
-                                             kernel_initializer=tf.random_normal_initializer(0., .1),  # weights
-                                             bias_initializer=tf.constant_initializer(0.1),  # biases
-                                             use_bias=True, trainable=trainable, reuse=tf.AUTO_REUSE, name=name+str(i))
-
-                enc = tf.layers.dense(hidden, out_dim, activation=tf.nn.relu,
-                                    kernel_initializer=tf.random_normal_initializer(0., .1),  # weights
-                                    bias_initializer=tf.constant_initializer(0.1),  # biases
-                                    use_bias=True, trainable=trainable, reuse=tf.AUTO_REUSE, name=name+"_out")
-
-            hidden = enc
-
-            with tf.variable_scope("decoder"):
-                for i in range(h_level):
-
-                    hidden = tf.layers.dense(hidden, h_num, activation=tf.nn.relu,
-                                             kernel_initializer=tf.random_normal_initializer(0., .1),  # weights
-                                             bias_initializer=tf.constant_initializer(0.1),  # biases
-                                             use_bias=True, trainable=trainable, reuse=tf.AUTO_REUSE, name=name+str(i))
-                
-                dec = tf.layers.dense(hidden, obs_dim_per_unit,
-                                    kernel_initializer=tf.random_normal_initializer(0., .1),  # weights
-                                    bias_initializer=tf.constant_initializer(0.1),  # biases
-                                    use_bias=True, trainable=trainable, reuse=tf.AUTO_REUSE, name=name+"_out")
-            return dec
-        else:
-            return e_input
-
-    def copy_ae_values_to_encoders(self, scope):
-        if not FLAGS.e_share:
-            enc_scopes = ["encoder" + str(i) for i in range(self.n_agent)]
-        else:
-            enc_scopes = ["encoder"]
-
-        ae_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope="ae_" + scope + "/encoder")
-
-        print ae_vars
-
-        update_encoder_ops_c = []
-        for e_scope in enc_scopes:
-
-            if FLAGS.trainable_encoder:
-                encoder_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope+"/"+e_scope)
-            else:
-                encoder_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=scope+"/"+e_scope)
-            
-            print encoder_vars
-            for i, enc_var in enumerate(encoder_vars):
-                update_encoder_op = enc_var.assign(ae_vars[i])
-                update_encoder_ops_c.append(update_encoder_op)
-
-        return tf.group(*update_encoder_ops_c)
-
-    def initialize_encoder_using_ae_weights(self):
-        return self.sess.run(self.initialize_encoders_op)
-
-    def train_autoencoder(self, obs):
-        error,_ = self.sess.run([self.ae_loss, self.ae_train_op], feed_dict={self.ae_input: obs})
-        return error
 
 class CriticNetwork:
     def __init__(self, sess, n_agent, state_dim, nn_id=None):

@@ -89,17 +89,14 @@ class ActorNetwork:
                                         self.is_training_ph: False})
 
     def training_actor(self, state_ph, action_ph, schedule_ph, td_errors):
-        print(state_ph)
-        print(action_ph)
-        print(schedule_ph)
-        print(td_errors)
         return self.sess.run(self.actor_train_op,
                              feed_dict={self.state_ph: state_ph,
                                         self.action_ph: action_ph,
                                         self.schedule_ph: schedule_ph,
                                         self.td_errors: td_errors,
                                         self.is_training_ph: True})
-    
+
+
 class CriticNetwork:
     def __init__(self, sess, n_agent, state_dim, nn_id=None):
 

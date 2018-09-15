@@ -67,8 +67,6 @@ class PredatorAgentIndActor(object):
         self._eval = Evaluation()
         self.q_prev = None
 
-        self._ae_dataset = []
-
     def save_nn(self, global_step):
         self.saver.save(self.sess, config.nn_filename, global_step)
 
@@ -142,18 +140,3 @@ class PredatorAgentIndActor(object):
         ret = np.zeros(self._n_agent)
         ret[schedule_idx] = 1.0
         return ret
-
-
-    def train_autoencoder(self, obs_list):
-        for obs in obs_list:
-            self._ae_dataset.append(obs)
-
-        if len(self._ae_dataset) == 64:
-            error = self._actor.train_autoencoder(self._ae_dataset)
-            self._ae_dataset = self._ae_dataset[:48]
-            return error
-        else:
-            return -1
-
-    def initialize_encoder(self):
-        self._actor.initialize_encoder_using_ae_weights()

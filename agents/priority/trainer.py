@@ -152,7 +152,7 @@ class Trainer(object):
         elif type == "round_robin":
             ret = np.full(self._n_predator, 0.0)
             ret[global_step % self._n_predator] = 1.0
-            return ret, np.zeros(self._n_predator)
+            return ret
         elif type == 'schedule':
             if train and (global_step < FLAGS.m_size * FLAGS.pre_train_step or np.random.rand() < self.epsilon):
                 priority = np.random.rand(self._n_predator)
@@ -166,7 +166,7 @@ class Trainer(object):
         else:
             ret = None
 
-        return ret, np.zeros(self._n_predator)
+        return ret
 
     def train_agents(self, state, obs_n, action_n, reward_n, state_next, obs_n_next, schedule_n, priority, done):
         # train predator only
@@ -176,6 +176,10 @@ class Trainer(object):
         predator_obs_next = [obs_n_next[i] for i in self._agent_profile['predator']['idx']]
         self._predator_agent.train(state, predator_obs, predator_action, predator_reward,
                                    state_next, predator_obs_next, schedule_n, priority, done)
+
+    def train_autoencoder(self, obs_n):
+        predator_obs = [obs_n[i] for i in self._agent_profile['predator']['idx']]
+        return self._predator_agent.train_autoencoder(predator_obs)
 
     def test(self, curr_ep=None):
 

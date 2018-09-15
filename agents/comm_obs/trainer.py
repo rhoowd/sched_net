@@ -49,37 +49,7 @@ class Trainer(object):
             self.canvas = canvas.Canvas(self._n_predator, 1, FLAGS.map_size)
             self.canvas.setup()
 
-    def ae_initialization(self):
-        print_flag = True
-        real_epsilon = self.epsilon
-        ae_training_step = 100000
-
-        step = 0
-        obs_n = self._env.reset()  # obs_n
-        last_print = 0
-        while step < ae_training_step:
-            done = False
-            while not done:
-                step += 1
-                self.epsilon = 2.0
-                schedule_n = self.get_schedule(obs_n, step, FLAGS.sched)
-                action_n = self.get_action(obs_n, schedule_n, step)
-                obs_n_next,_,done_n,_ = self._env.step(action_n) # obs_n_next
-                
-                done = sum(done_n) > 0
-                error = self.train_autoencoder(obs_n)
-                obs_n = obs_n_next
-
-                if print_flag and error >= 0 and step > last_print + 100:
-                    last_print = step
-                    print("[train_ep %d]" % (-1),"\tstep:", step, "\terror:", error)
-                
-        self._predator_agent.initialize_encoder()
-        self.epsilon = real_epsilon
-
     def learn(self):
-        if FLAGS.ae_initializer:
-            self.ae_initialization()
             
         global_step = 0
         episode_num = 0

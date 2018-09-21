@@ -29,9 +29,9 @@ class PredatorAgentIndActor(object):
         logger.info("CCentralized Critic Independent Actor")
 
         self._n_agent = n_agent
-        self._state_dim = state_dim
+        self._state_dim = state_dim + n_agent
         self._action_dim_per_unit = action_dim
-        self._obs_dim_per_unit = obs_dim
+        self._obs_dim_per_unit = obs_dim + 1
 
         # concatenated action space for actor network
         self._concat_action_dim = self._action_dim_per_unit * self._n_agent

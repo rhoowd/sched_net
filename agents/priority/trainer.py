@@ -48,6 +48,20 @@ class Trainer(object):
         if FLAGS.gui:
             self.canvas = canvas.Canvas(self._n_predator, 1, FLAGS.map_size)
             self.canvas.setup()
+    def get_h_obs_state(self, obs_n, state, h_schedule):
+        obs_n_h=np.concatenate((obs_n[0:4], h_schedule.reshape((self._n_predator,1))), axis=1)
+        obs_final = list()
+        for i in range(4):
+            obs_final.append(obs_n_h[i])
+        obs_final.append(obs_n[4])
+        obs_n = np.array(obs_final)
+        state=np.concatenate((state, h_schedule), axis=-1)
+        return obs_n, state
+
+    def update_h_schedule(self, h_schedule, schedule_n):
+
+        ret = h_schedule * 0.5 + schedule_n * 0.5
+        return ret
 
     def learn(self):
 
@@ -59,8 +73,11 @@ class Trainer(object):
             episode_num += 1
             step_in_ep = 0
             obs_n = self._env.reset()  # obs_n
-            state = self._env.get_info()[0]['state']
+            state = np.array(self._env.get_info()[0]['state'])
+            h_schedule = np.zeros(self._n_predator)
             total_reward = 0
+
+            obs_n, state = self.get_h_obs_state(obs_n, state, h_schedule)
 
             done = False
             while not done:
@@ -69,9 +86,12 @@ class Trainer(object):
 
                 schedule_n, priority = self.get_schedule(obs_n, global_step, FLAGS.sched)
                 action_n = self.get_action(obs_n, schedule_n, global_step)
-
+                h_schedule = self.update_h_schedule(h_schedule, schedule_n)
+                
                 obs_n_next, reward_n, done_n, info_n = self._env.step(action_n) # obs_n_next
                 state_next = info_n[0]['state']
+
+                obs_n_next, state_next = self.get_h_obs_state(obs_n_next, state_next, h_schedule)
 
                 # if FLAGS.gui:
                 #     self.canvas.draw(state_next * FLAGS.map_size, [0]*self._n_predator, "Hello")
@@ -170,6 +190,7 @@ class Trainer(object):
 
     def train_agents(self, state, obs_n, action_n, reward_n, state_next, obs_n_next, schedule_n, priority, done):
         # train predator only
+        
         predator_obs = [obs_n[i] for i in self._agent_profile['predator']['idx']]
         predator_action = [action_n[i] for i in self._agent_profile['predator']['idx']]
         predator_reward = [reward_n[i] for i in self._agent_profile['predator']['idx']]

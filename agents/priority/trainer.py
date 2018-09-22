@@ -218,12 +218,15 @@ class Trainer(object):
         test_flag = FLAGS.kt
         total_reward = 0
         obs_cnt = np.zeros(self._n_predator)
+        
 
         while global_step < testing_step:
             episode_num += 1
             step_in_ep = 0
             obs_n = self._env.reset()
-            state = self._env.get_info()[0]['state']
+            state = np.array(self._env.get_info()[0]['state'])
+            h_schedule = np.zeros(self._n_predator)
+            obs_n, state = self.get_h_obs_state(obs_n, state, h_schedule)
 
             if test_flag:
                 print("\nInit\n", obs_n[0])
@@ -237,6 +240,8 @@ class Trainer(object):
                 action_n = self.get_action(obs_n, schedule_n, global_step, False)
                 obs_n_next, reward_n, done_n, info_n = self._env.step(action_n)
                 state_next = info_n[0]['state']
+                obs_n_next, state_next = self.get_h_obs_state(obs_n_next, state_next, h_schedule)
+
 
                 if FLAGS.log_test:
                     pr_obs_n = [obs.tolist() for obs in obs_n]

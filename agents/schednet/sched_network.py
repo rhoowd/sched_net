@@ -4,7 +4,7 @@
 import numpy as np
 import tensorflow as tf
 import config
-from agents.comm_obs import comm
+from agents.schednet import comm
 
 FLAGS = config.flags.FLAGS
 
@@ -17,7 +17,7 @@ lr_decay = 1  # learning rate decay (per episode)
 
 tau = 5e-2  # soft target update rate
 
-np.set_printoptions(threshold=np.nan)
+# np.set_printoptions(threshold=np.nan)
 
 class SchedulerNetwork:
     def __init__(self, sess, n_player, obs_dim):
@@ -28,29 +28,48 @@ class SchedulerNetwork:
 
         # placeholders
         self.obs_ph = tf.placeholder(dtype=tf.float32, shape=[None, self.obs_dim])
-        self.schedule_ph = tf.placeholder(dtype=tf.float32, shape=[None, self.n_player])
+        # self.schedule_ph = tf.placeholder(dtype=tf.float32, shape=[None, self.n_player])
 
         self.td_errors = tf.placeholder(dtype=tf.float32, shape=[None, 1])
         self.is_training_ph = tf.placeholder(dtype=tf.bool, shape=())  # for dropout
 
-        # actor network
+        self.sched_grads_ph = tf.placeholder(dtype=tf.float32, shape=[None, self.n_player])
+
+        # Softmax version
+        # with tf.variable_scope('schedule'):
+            # schedule_policy = self.generate_scheduler(self.obs_ph, trainable=True)
+            # self.schedule_policy = tf.nn.softmax(schedule_policy)
+
         with tf.variable_scope('schedule'):
-            schedule_policy = self.generate_scheduler(self.obs_ph, trainable=True)
-            self.schedule_policy = tf.nn.softmax(schedule_policy)
+            self.schedule_policy = self.generate_scheduler(self.obs_ph, trainable=True)
+
+        with tf.variable_scope('slow_target_schedule'):
+            self.target_schedule_policy = tf.stop_gradient(self.generate_scheduler(self.obs_ph, trainable=False))
 
         # actor loss function (mean Q-values under current policy with regularization)
         self.actor_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='schedule')
-        self.responsible = tf.multiply(self.schedule_policy, self.schedule_ph)  # =\pi (policy)
 
-        log_prob = tf.log(tf.reduce_sum(self.responsible, reduction_indices=1, keep_dims=True))
-        entropy = -tf.reduce_sum(self.schedule_policy * tf.log(self.schedule_policy), 1)
+        # Softmax version
+        # self.responsible = tf.multiply(self.schedule_policy, self.schedule_ph)  # =\pi (policy)
+        # log_prob = tf.log(tf.reduce_sum(self.responsible, reduction_indices=1, keep_dims=True))
+        # entropy = -tf.reduce_sum(self.schedule_policy * tf.log(self.schedule_policy), 1)
+        # self.loss = tf.reduce_sum(-(tf.multiply(log_prob, self.td_errors) + 0.01 * entropy))
 
-        self.loss = tf.reduce_sum(-(tf.multiply(log_prob, self.td_errors) + 0.01 * entropy))
+        # var_grads = tf.gradients(self.loss, self.actor_vars)
 
-        var_grads = tf.gradients(self.loss, self.actor_vars)
-        self.grad = var_grads
+        var_grads = tf.gradients(self.schedule_policy, self.actor_vars, -self.sched_grads_ph)
         self.scheduler_train_op = tf.train.AdamOptimizer(lr_actor * lr_decay).apply_gradients(
             zip(var_grads, self.actor_vars))
+
+        slow_target_sch_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='slow_target_schedule')
+
+        # update values for slowly-changing targets towards current actor and critic
+        update_slow_target_ops_i = []
+        for i, slow_target_sch_var in enumerate(slow_target_sch_vars):
+            update_slow_target_sch_op = slow_target_sch_var.assign(
+                tau * self.actor_vars[i] + (1 - tau) * slow_target_sch_var)
+            update_slow_target_ops_i.append(update_slow_target_sch_op)
+        self.update_slow_targets_op_i = tf.group(*update_slow_target_ops_i)
 
     def generate_scheduler(self, obs, trainable=True):
         obs_list = list()
@@ -81,7 +100,7 @@ class SchedulerNetwork:
                                    bias_initializer=tf.constant_initializer(0.1),  # biases
                                    use_bias=True, trainable=trainable)
 
-        schedule = tf.layers.dense(hidden_2, 1, trainable=trainable)
+        schedule = tf.layers.dense(hidden_2, 1, activation=tf.nn.sigmoid, trainable=trainable)
 
         return schedule
 
@@ -90,10 +109,17 @@ class SchedulerNetwork:
         return self.sess.run(self.schedule_policy,
                              feed_dict={self.obs_ph: obs_ph, self.is_training_ph: False})[0]
 
-    def training_scheduler(self, obs_ph, schedule_ph, td_errors):
+    def target_schedule_for_obs(self, obs_ph):
+
+        return self.sess.run(self.target_schedule_policy,
+                             feed_dict={self.obs_ph: obs_ph, self.is_training_ph: False})
+
+    def training_scheduler(self, obs_ph, sched_grads_ph):
 
         return self.sess.run(self.scheduler_train_op,
                              feed_dict={self.obs_ph: obs_ph,
-                                        self.schedule_ph: schedule_ph,
-                                        self.td_errors: td_errors,
+                                        self.sched_grads_ph: sched_grads_ph,
                                         self.is_training_ph: True})
+
+    def training_target_scheduler(self):
+        return self.sess.run(self.update_slow_targets_op_i)

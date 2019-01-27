@@ -8,10 +8,10 @@ import random
 import numpy as np
 import tensorflow as tf
 
-from agents.priority.replay_buffer import ReplayBuffer
-from agents.priority.ac_network import ActorNetwork
-from agents.priority.ac_network import CriticNetwork
-from agents.priority.sched_network import SchedulerNetwork
+from agents.schednet.replay_buffer import ReplayBuffer
+from agents.schednet.ac_network import ActorNetwork
+from agents.schednet.ac_network import CriticNetwork
+from agents.schednet.sched_network import SchedulerNetwork
 from agents.evaluation import Evaluation
 
 import logging

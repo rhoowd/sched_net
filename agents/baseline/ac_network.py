@@ -4,7 +4,7 @@
 import numpy as np
 import tensorflow as tf
 import config
-from agents.comm_obs import comm
+from agents.baseline import comm
 
 FLAGS = config.flags.FLAGS
 
@@ -23,7 +23,7 @@ lr_decay = 1  # learning rate decay (per episode)
 
 tau = 5e-2  # soft target update rate
 
-np.set_printoptions(threshold=np.nan)
+# np.set_printoptions(threshold=np.nan)
 
 
 class ActorNetwork:

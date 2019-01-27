@@ -3,7 +3,7 @@ from __future__ import division
 from __future__ import absolute_import
 import six
 import numpy as np
-from agents.comm_obs.agent import PredatorAgentIndActor
+from agents.baseline.agent import PredatorAgentIndActor
 from agents.simple_agent import RandomAgent
 from agents.evaluation import Evaluation
 import logging

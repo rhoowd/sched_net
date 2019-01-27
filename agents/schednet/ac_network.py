@@ -4,7 +4,7 @@
 import numpy as np
 import tensorflow as tf
 import config
-from agents.priority import comm
+from agents.schednet import comm
 
 FLAGS = config.flags.FLAGS
 

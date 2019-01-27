@@ -6,8 +6,7 @@
 def config_agent(_flags):
     flags = _flags
 
-    # flags.DEFINE_string("agent", "comm_obs", "Agent")
-    flags.DEFINE_string("agent", "priority", "Agent")
+    flags.DEFINE_string("agent", "schednet", "Agent")
 
     flags.DEFINE_integer("training_step", 800000, "Training time step")
     flags.DEFINE_integer("testing_step", 2500, "Testing time step")

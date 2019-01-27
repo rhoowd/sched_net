@@ -8,10 +8,10 @@ import random
 import numpy as np
 import tensorflow as tf
 
-from agents.comm_obs.replay_buffer import ReplayBuffer
-from agents.comm_obs.ac_network import ActorNetwork
-from agents.comm_obs.ac_network import CriticNetwork
-from agents.comm_obs.sched_network import SchedulerNetwork
+from agents.baseline.replay_buffer import ReplayBuffer
+from agents.baseline.ac_network import ActorNetwork
+from agents.baseline.ac_network import CriticNetwork
+from agents.baseline.sched_network import SchedulerNetwork
 from agents.evaluation import Evaluation
 
 import logging

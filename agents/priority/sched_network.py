@@ -17,7 +17,7 @@ lr_decay = 1  # learning rate decay (per episode)
 
 tau = 5e-2  # soft target update rate
 
-np.set_printoptions(threshold=np.nan)
+# np.set_printoptions(threshold=np.nan)
 
 class SchedulerNetwork:
     def __init__(self, sess, n_player, obs_dim):

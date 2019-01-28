@@ -23,7 +23,7 @@ result = logging.getLogger('Result')
 
 
 # centralized actor-critic agent guiding multiple predators with full observation
-class PredatorAgentIndActor(object):
+class PredatorAgent(object):
 
     def __init__(self, n_agent, action_dim, state_dim, obs_dim, name=""):
         logger.info("CCentralized Critic Independent Actor")

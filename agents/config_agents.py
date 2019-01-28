@@ -11,6 +11,8 @@ def config_agent(_flags):
     flags.DEFINE_integer("training_step", 800000, "Training time step")
     flags.DEFINE_integer("testing_step", 2500, "Testing time step")
     flags.DEFINE_integer("max_step", 500, "Maximum time step per episode")
+
+    flags.DEFINE_boolean("eval_on_train", False, "Evaluation for every eval_step")
     flags.DEFINE_integer("eval_step", 2500, "Number of steps before training")
 
     # RL setting

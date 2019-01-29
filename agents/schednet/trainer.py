@@ -27,15 +27,18 @@ class Trainer(object):
         self._env = env
         self._eval = Evaluation()
         self._agent_profile = self._env.get_agent_profile()
-        self._state_dim = self._env.get_info()[0]['state'].shape[0]
         self._n_predator = self._agent_profile['predator']['n_agent']
         self._n_prey = self._agent_profile['prey']['n_agent']
-
+        
+        # State and obs additionally include history information
+        self._state_dim = self._env.get_info()[0]['state'].shape[0] + self._n_predator
+        self._obs_dim = obs_dim=self._agent_profile['predator']['obs_dim'][0] + 1
+        
         # Predator agent
         self._predator_agent = PredatorAgent(n_agent=self._agent_profile['predator']['n_agent'],
                                              action_dim=self._agent_profile['predator']['act_dim'],
                                              state_dim=self._state_dim,
-                                             obs_dim=self._agent_profile['predator']['obs_dim'][0])
+                                             obs_dim=self._obs_dim)
         # Prey agent (randomly moving)
         self._prey_agent = []
         for _ in range(self._n_prey):

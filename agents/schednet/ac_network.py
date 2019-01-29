@@ -23,10 +23,7 @@ lr_decay = 1  # learning rate decay (per episode)
 
 tau = 5e-2  # soft target update rate
 
-# np.set_printoptions(threshold=np.nan)
-
-
-class ActorNetwork:
+class ActionSelectorNetwork:
 
     def __init__(self, sess, n_agent, obs_dim_per_unit, action_dim, nn_id=None):
 
@@ -50,27 +47,21 @@ class ActorNetwork:
         self.td_errors = tf.placeholder(dtype=tf.float32, shape=[None, 1])
 
         # indicators (go into target computation)
-        self.is_training_ph = tf.placeholder(dtype=tf.bool, shape=())  # for dropout
+        self.is_training_ph = tf.placeholder(dtype=tf.bool, shape=()) 
 
-        # actor network
+        # action selector
         with tf.variable_scope(scope):
-            # Policy's outputted action for each state_ph (for generating actions and training the critic)
             self.actions = self.generate_actor_network(self.state_ph, self.schedule_ph, trainable=True)
 
         # actor loss function (mean Q-values under current policy with regularization)
         self.actor_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope)
-
         self.responsible = tf.multiply(self.actions, self.a_onehot)
-        
         log_prob = tf.log(tf.reduce_sum(self.responsible, reduction_indices=1, keep_dims=True))
         entropy = -tf.reduce_sum(self.actions*tf.log(self.actions), 1)
-
         self.loss = tf.reduce_sum(-(tf.multiply(log_prob, self.td_errors) + 0.01*entropy)) 
-
         var_grads = tf.gradients(self.loss, self.actor_vars)
         self.actor_train_op = tf.train.AdamOptimizer(lr_actor * lr_decay).apply_gradients(zip(var_grads,self.actor_vars))
 
-    # will use this to initialize both the actor network its slowly-changing target network with same structure
     def generate_actor_network(self, obs, schedule, trainable, share=False):
 
         obs_list = list()
@@ -78,8 +69,6 @@ class ActorNetwork:
             obs_list.append(obs[:, i * self.obs_dim_per_unit:(i + 1) * self.obs_dim_per_unit])
 
         ret = comm.generate_comm_network(obs_list, self.obs_dim_per_unit, self.action_dim, self.n_agent, schedule=schedule)
-        # ret = comm.generate_comm_network_0_schedule(obs_list, self.action_dim, self.n_agent)
-        # ret = comm.generate_actor_network(obs_list, self.action_dim, self.n_agent)
         return ret
 
     def action_for_state(self, state_ph, schedule_ph):
@@ -150,46 +139,44 @@ class CriticNetwork:
         update_slow_target_ops_c = []
         for i, slow_target_var in enumerate(slow_target_critic_vars):
             update_slow_target_critic_op = slow_target_var.assign(tau * critic_vars[i] + (1 - tau) * slow_target_var)
-            # update_slow_target_critic_op = slow_target_var.assign(critic_vars[i]) #copy only
             update_slow_target_ops_c.append(update_slow_target_critic_op)
         self.update_slow_targets_op_c = tf.group(*update_slow_target_ops_c)
 
         self.scheduler_gradients = tf.gradients(self.sch_q_values, self.priority_ph)[0]
 
-    # will use this to initialize both the critic network its slowly-changing target network with same structure
     def generate_critic_network(self, s, sch_val, trainable):
         state_action = s
 
         hidden = tf.layers.dense(state_action, h1_critic, activation=tf.nn.relu,
-                                 kernel_initializer=tf.random_normal_initializer(0., .1),    # weights
-                                 bias_initializer=tf.constant_initializer(0.1),  # biases
+                                 kernel_initializer=tf.random_normal_initializer(0., .1),
+                                 bias_initializer=tf.constant_initializer(0.1),  
                                  use_bias=True, trainable=trainable, name='dense_c1')
 
         hidden_2 = tf.layers.dense(hidden, h2_critic, activation=tf.nn.relu,
-                                   kernel_initializer=tf.random_normal_initializer(0., .1),    # weights
-                                   bias_initializer=tf.constant_initializer(0.1),  # biases
+                                   kernel_initializer=tf.random_normal_initializer(0., .1),
+                                   bias_initializer=tf.constant_initializer(0.1),  
                                    use_bias=True, trainable=trainable, name='dense_c2')
 
         hidden_3 = tf.layers.dense(hidden_2, h3_critic, activation=tf.nn.relu,
-                                   kernel_initializer=tf.random_normal_initializer(0., .1),    # weights
-                                   bias_initializer=tf.constant_initializer(0.1),  # biases
+                                   kernel_initializer=tf.random_normal_initializer(0., .1),
+                                   bias_initializer=tf.constant_initializer(0.1), 
                                    use_bias=True, trainable=trainable, name='dense_c3')
 
         q_values = tf.layers.dense(hidden_3, 1, trainable=trainable,
-                                   kernel_initializer=tf.random_normal_initializer(0., .1),    # weights
-                                   bias_initializer=tf.constant_initializer(0.1),  # biases
+                                   kernel_initializer=tf.random_normal_initializer(0., .1),
+                                   bias_initializer=tf.constant_initializer(0.1),  
                                    name='dense_c4', use_bias=False)
         
         h2_sch = tf.concat([hidden_2, sch_val], axis=1)
 
         sch_hidden_3 = tf.layers.dense(h2_sch, h3_critic, activation=tf.nn.relu,
-                                   kernel_initializer=tf.random_normal_initializer(0., .1),    # weights
-                                   bias_initializer=tf.constant_initializer(0.1),  # biases
+                                   kernel_initializer=tf.random_normal_initializer(0., .1),
+                                   bias_initializer=tf.constant_initializer(0.1), 
                                    use_bias=True, trainable=trainable, name='dense_c3_sch')
 
         sch_q_values = tf.layers.dense(sch_hidden_3, 1, trainable=trainable,
-                                   kernel_initializer=tf.random_normal_initializer(0., .1),    # weights
-                                   bias_initializer=tf.constant_initializer(0.1),  # biases
+                                   kernel_initializer=tf.random_normal_initializer(0., .1),  
+                                   bias_initializer=tf.constant_initializer(0.1), 
                                    name='dense_c4_sch', use_bias=False)
 
         return q_values, sch_q_values

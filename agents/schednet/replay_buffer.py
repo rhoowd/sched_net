@@ -7,7 +7,7 @@ import random
 
 FLAGS = config.flags.FLAGS
 
-logger = logging.getLogger("Agent.replay")
+logger = logging.getLogger('Agent.replay')
 result = logging.getLogger('Result')
 
 

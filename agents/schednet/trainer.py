@@ -32,7 +32,7 @@ class Trainer(object):
         
         # State and obs additionally include history information
         self._state_dim = self._env.get_info()[0]['state'].shape[0] + self._n_predator
-        self._obs_dim = obs_dim=self._agent_profile['predator']['obs_dim'][0] + 1
+        self._obs_dim = self._agent_profile['predator']['obs_dim'][0] + 1
         
         # Predator agent
         self._predator_agent = PredatorAgent(n_agent=self._agent_profile['predator']['n_agent'],

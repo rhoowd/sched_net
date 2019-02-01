@@ -21,7 +21,8 @@ partially observed information.
 - Scheduler: Map from weights __w__ to schedule profile __c__
 - Critic: Estimates the action value function of actor
 
-![alt text](img/architecture.png "Schednet")
+<img src="img/architecture.png" alt="Drawing" style="width: 75%;"/>
+
 
 ### Components of each agent in SchedNet
 
@@ -53,8 +54,7 @@ python main.py
 - Reward: Get reward when they capture the prey
 Performance metric: Number of steps taken to capture the prey
 
-
-![alt text](img/env.png "Environment")
+<img src="img/env.png" alt="Drawing" style="width: 75%;"/>
 
 
 ## Result
@@ -63,14 +63,16 @@ Performance metric: Number of steps taken to capture the prey
     - Train the models until convergence
     - Evaluate models by averaging metrics for 1,000 iterations
 
-![alt text](img/r0.png "Environment")
+
+<img src="img/r0.png" alt="Drawing" style="width: 75%;"/>
+
+
 
 - Communication improve the performance: SchedNET and DIAL outperform IDQN and COMA
 - Consider the scheduling from training: Sched-Top(1) outperforms DIAL(1) which is trained without considering scheduling
 - Intelligent scheduling: Sched-Top(1) improves the performance by 43% compared to Round Robin
 
-
-![alt text](img/r1.png "Environment")
+<img src="img/r1.png" alt="Drawing" style="width: 75%;"/>
 
 - Importance-based scheduling
     - Instances of temporal scheduling profiles obtained during the execution
@@ -78,7 +80,7 @@ Performance metric: Number of steps taken to capture the prey
     - Agent 1 tends to obtain valuable observation more frequently
     - SchedNet schedules agent 1 more
 
-![alt text](img/r2.png "Environment")
+<img src="img/r2.png" alt="Drawing" style="width: 75%;"/>
 
 - Message
     - What the agents communicate when performing the task

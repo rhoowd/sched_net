@@ -33,7 +33,7 @@ if __name__ == '__main__':
     logger_env.info('GridMARL Start with %d predator(s) and %d prey(s)', FLAGS.n_predator, FLAGS.n_prey)
 
     logger_agent.info('Agent: {}'.format(FLAGS.agent))
-    trainer = agents.load(FLAGS.agent+"/trainer.py").Trainer(env)
+    trainer = agents.load(FLAGS.agent+"/trainer_no_history.py").Trainer(env)
 
     print(FLAGS.agent, config.file_name)
 

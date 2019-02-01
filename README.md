@@ -1,8 +1,6 @@
-<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-
 # Learning to Schedule Communication in Multi-agent Reinforcement Learning
 
-This is the code for implementing the __SchedNet__ algorithm presented in the paper which will appear ICLR 2019: ["Learning to Schedule Communication in Multi-agent Reinforcement Learning"](https://tensorflowkorea.gitbooks.io/tensorflow-kr/content/g3doc/how_tos/variable_scope/).
+This is the code for implementing the __SchedNet__ algorithm presented in the paper which will appear ICLR 2019: ["Learning to Schedule Communication in Multi-agent Reinforcement Learning"](http://lanada.kaist.ac.kr/Publication/Conference/Learning_to_schedule.pdf).
 
 ## Summary of the paper
 

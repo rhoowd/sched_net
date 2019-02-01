@@ -23,6 +23,8 @@ partially observed information.
 
 <img src="img/architecture.png" alt="Drawing" style="width: 75%;"/>
 
+![very good|512x397,20%](//img/architecture.png)
+
 
 ### Components of each agent in SchedNet
 

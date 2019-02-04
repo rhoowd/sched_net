@@ -55,8 +55,8 @@ python main.py
 - Reward: Get reward when they capture the prey
 Performance metric: Number of steps taken to capture the prey
 
-<img src="img/env.png" alt="Drawing" style="width: 75%;"/>
 
+<img src="img/env.png" width="500"/>
 
 ## Result
 
@@ -65,24 +65,24 @@ Performance metric: Number of steps taken to capture the prey
     - Evaluate models by averaging metrics for 1,000 iterations
 
 
-<img src="img/r0.png" alt="Drawing" style="width: 75%;"/>
 
+<img src="img/r0.png" width="500"/>
 
 
 - Communication improve the performance: SchedNET and DIAL outperform IDQN and COMA
 - Consider the scheduling from training: Sched-Top(1) outperforms DIAL(1) which is trained without considering scheduling
 - Intelligent scheduling: Sched-Top(1) improves the performance by 43% compared to Round Robin
 
-<img src="img/r1.png" alt="Drawing" style="width: 75%;"/>
 
+<img src="img/r1.png" width="500"/>
 - Importance-based scheduling
     - Instances of temporal scheduling profiles obtained during the execution
     - Agent 1 has a wider observation range
     - Agent 1 tends to obtain valuable observation more frequently
     - SchedNet schedules agent 1 more
 
-<img src="img/r2.png" alt="Drawing" style="width: 75%;"/>
 
+<img src="img/r2.png" width="500"/>
 - Message
     - What the agents communicate when performing the task
     - Observe prey: larger variance to include prey’s location information (red ‘x’ in (a))

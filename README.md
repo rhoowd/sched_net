@@ -21,9 +21,7 @@ partially observed information.
 - Scheduler: Map from weights __w__ to schedule profile __c__
 - Critic: Estimates the action value function of actor
 
-<img src="img/architecture.png" alt="Drawing" style="width: 75%;"/>
-
-![](img/architecture.png | width=100)
+<img src="img/architecture.png" width="500"/>
 
 
 

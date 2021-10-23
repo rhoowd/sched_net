@@ -11,7 +11,7 @@ import socket
 import threading
 import json
 import pygame
-import ConfigParser
+import configparser
 
 from time import sleep
 from math import pi, sin, cos, sqrt, ceil, floor

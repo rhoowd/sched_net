@@ -4,16 +4,10 @@ This is the code for implementing the __SchedNet__ algorithm presented in the pa
 
 ## Summary of the paper
 
-In MARL (multi-agent reinforcement learning), well-coordinated actions
-among the agents are crucial to achieve the target goal better at these tasks. One
-way to accelerate the coordination effect is to enable multiple agents to communicate with each other in a distributed manner and behave as a group. In this paper,
-we study a practical scenario when _(i)_ the communication bandwidth is limited
-and _(ii)_ the agents share the communication medium so that only a restricted number of agents are able to simultaneously use the medium, as in the state-of-the-art
-wireless networking standards. This calls for a certain form of communication
-scheduling. In that regard, we propose a multi-agent deep reinforcement learning framework, called SchedNet, in which agents learn how to schedule themselves, how to encode the messages, and how to select actions based on received
-messages. SchedNet is capable of deciding which agents should be entitled to
-broadcasting their (encoded) messages, by learning the importance of each agent’s
-partially observed information. 
+In MARL (multi-agent reinforcement learning), well-coordinated actions among the agents are crucial to achieve the target goal better at these tasks. One way to accelerate the coordination effect is to enable multiple agents to communicate with each other in a distributed manner and behave as a group. In this paper, we study a practical scenario when <br/>
+_(i)_ the communication bandwidth is limited and<br/> 
+_(ii)_ the agents share the communication medium so that only a restricted number of agents are able to simultaneously use the medium, as in the state-of-the-art wireless networking standards.<br/> 
+This calls for a certain form of communication scheduling. In that regard, we propose a multi-agent deep reinforcement learning framework, called SchedNet, in which agents learn how to schedule themselves, how to encode the messages, and how to select actions based on received messages. SchedNet is capable of deciding which agents should be entitled to broadcasting their (encoded) messages, by learning the importance of each agent’s partially observed information. 
 
 ### The overall architecture of SchedNet
 
